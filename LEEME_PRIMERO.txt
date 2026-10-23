@@ -1,23 +1,10 @@
-SOLIS FIELD PRO 2.0.0
-====================
+SOLIS FIELD PRO 2.1.0
 
-1. Primero descarga un respaldo JSON desde tu aplicación anterior.
-2. Abre docs/GITHUB_CLOUDFLARE.md: contiene la guía paso a paso.
-3. Sube el contenido completo del proyecto a la raíz de tu repositorio GitHub.
-4. Crea D1 y R2 en Cloudflare; coloca el ID de D1 en wrangler.jsonc.
-5. Conecta el repositorio a Cloudflare Workers, conservando el nombre de tu Worker.
-6. Build command: node scripts/ci.mjs
-7. Deploy command: node scripts/deploy.mjs
-8. Configura el Secret SETUP_TOKEN y crea el administrador desde Sincronización.
-9. Configura la empresa y su logo. Crea y prueba un informe.
+Si tu aplicación ya está funcionando en Cloudflare, lee primero ACTUALIZAR_v2.1.0.md.
+Conserva el wrangler.jsonc que ya tienes en GitHub. Este ZIP no lo reemplaza.
+No recrees D1 ni R2. Sube la nueva migración junto con el código.
 
-IMPORTANTE
-- Esta entrega reemplaza las fuentes anteriores. No mezcles ambos proyectos.
-- La sincronización requiere configurar el servidor; no se activa solo por subir archivos a GitHub.
-- IA, PDF directo y correo requieren habilitar sus servicios en tu cuenta.
-- El modo offline necesita una primera carga completa por HTTPS o localhost.
-- La sincronización automática funciona con la aplicación abierta.
-- No subas contraseñas, tokens ni respaldos de informes al repositorio.
+Novedades: clientes e instalaciones, equipos con historial, hallazgos y plantillas configurables.
 
-Para probar localmente en Windows, usa INICIAR_APP.bat con Node.js 22.13 o superior.
-No necesitas npm install para el servidor local ni para ejecutar las pruebas.
+Prueba local: ejecuta INICIAR_APP.bat en Windows o npm run dev con Node 22.13 o superior.
+Instalación nueva: copia wrangler.example.jsonc como wrangler.jsonc y configura tus recursos siguiendo docs/GITHUB_CLOUDFLARE.md.

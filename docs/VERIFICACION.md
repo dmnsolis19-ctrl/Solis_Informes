@@ -1,64 +1,56 @@
-# Verificación de la entrega 2.0.0
+# Verificación de la entrega 2.1.0
 
 Fecha: 23 de octubre de 2026.
 
-## Pruebas automatizadas
+## Pruebas automáticas
 
-24 pruebas superadas mediante `node --test` y comprobación de sintaxis de todos los módulos.
+38 pruebas superadas con `node scripts/ci.mjs`, revisión de sintaxis de 21 módulos y compilación de 15 recursos locales. No se requieren recursos de CDN para abrir la interfaz.
 
-Cobertura:
+Se conserva la cobertura anterior: nueve plantillas, emisión, revisiones, presupuestos, fecha local, importación anterior, concurrencia, autenticación, aislamiento de espacios, fotografías privadas, enlaces, caché offline y contratos de IA, correo y PDF.
 
-- Nueve plantillas; lecturas inicialmente vacías e independientes.
-- Resultado de inspección: No aplica no equivale a Conforme.
-- Campos necesarios para emitir un documento.
-- Revisión que conserva el original y retira firmas de la copia.
-- Cálculos de propuestas y fecha local.
-- Normalización de registros de la versión anterior.
-- Confirmaciones de sincronización que no borran cambios posteriores.
-- Escape de contenido e impedimento de imágenes externas en documentos.
-- Preparación de interfaz offline y recuperación de navegación sin red mediante un entorno simulado de service worker.
-- Exclusión de API privada y enlaces compartidos de la caché de la PWA.
-- Actualización que conserva cachés ajenas.
-- Instalación protegida y sesiones HttpOnly/Secure en HTTPS.
-- Autenticación y validación de origen.
-- Sincronización idempotente, lectura incremental y rechazo de versiones obsoletas.
-- Dos escrituras simultáneas: una confirmada y otra informada como conflicto.
-- Control de folio y revisión duplicados.
-- Bloqueo de modificación y eliminación de documentos emitidos.
-- Eliminación recuperable y restauración mediante tombstones.
-- Evidencias privadas en R2 y referencias sin base64 en D1.
-- Aislamiento de datos entre espacios de trabajo.
-- Enlaces exclusivos para documentos emitidos, acceso público con token y revocación.
-- Contrato del asistente IA y requisito de configuración de correo.
-- Contrato de PDF A4 y numeración de páginas.
+Cobertura nueva:
 
-El adaptador de pruebas utiliza SQLite real con el esquema SQL incluido. La interfaz R2 se reproduce en memoria. Workers AI y Browser Run se prueban con dobles de servicio. No se enviaron correos, no se consumió IA y no se generó un PDF real en la cuenta Cloudflare del usuario.
+- Migración SQL sobre una base con documentos existentes: conserva datos, versiones, secuencia e historial y mantiene los índices y disparadores.
+- Selección de equipos que completa cliente e instalación y copia los datos al informe.
+- Historial por ID estable, conservando revisiones aunque cambie el TAG.
+- Plantillas independientes con orden documental, verificaciones, mediciones inicialmente vacías, secciones y campos adicionales obligatorios.
+- Hallazgos: contenido mínimo, responsable y plazo para prioridades altas, evidencia de cierre y referencias de fotografías existentes.
+- Texto escapado y citas a las figuras en el documento.
+- Sincronización de catálogos, compatibilidad de lectura con clientes anteriores y rechazo de escrituras antiguas que perderían relaciones.
+- TAG único por empresa, conflictos, archivado y restauración con historial.
+- Un equipo reubicado no cambia la ubicación registrada en un informe anterior ni impide sincronizarlo.
+- Plantillas sincronizadas y validación de sus requisitos en el servidor antes de emitir.
+- Impedimento de transferir registros existentes entre empresas.
+- Precarga de los dos módulos nuevos en la caché offline.
+
+El adaptador de pruebas usa SQLite real. R2 se reproduce en memoria; Workers AI y Browser Run utilizan dobles de servicio. No se enviaron correos, no se consumió IA ni se generó un PDF real en los recursos Cloudflare del usuario.
 
 ## Revisión en navegador
 
-Se verificaron:
+Recorrido verificado con datos de demostración:
 
-- Carga del panel de inicio.
-- Creación de un informe general con folio nuevo.
-- Escritura y conservación de campos al cambiar de sección.
-- Autoguardado y presencia del documento al abrir otra vista de la aplicación.
-- Vista previa del documento con logo, datos corporativos, encabezado y secciones.
-- Composición del panel y formulario en contenedores de 390 y 768 píxeles.
-- Ausencia de desbordamiento horizontal en las vistas examinadas; el área útil fue de 375 y 753 píxeles tras descontar las barras del navegador.
+1. Crear cliente e instalación desde el directorio.
+2. Registrar un equipo con TAG y serie.
+3. Crear una plantilla propia, marcar Revisor como obligatorio, mover la sección Hallazgos y agregar una sección de procedimiento.
+4. Crear un informe desde el historial del equipo con esa plantilla.
+5. Comprobar cliente, instalación, datos de equipo y textos iniciales copiados.
+6. Completar redacción y sección propia; agregar y guardar un hallazgo.
+7. Abrir la vista previa y verificar identidad corporativa, orden modificado, hallazgo y contenido adicional.
+8. Regresar al historial y comprobar la presencia del informe y el hallazgo.
+9. Revisar directorio y equipos en contenedores de 390 y 768 píxeles: sin desbordamiento horizontal en las vistas examinadas.
 
-La comprobación responsive se realizó en Chrome con contenedores de esos tamaños, no en dispositivos físicos. La previsualización interna usa HTTP; la instalación PWA y el comportamiento offline completo deben verificarse en la dirección HTTPS publicada o en localhost. La prueba del service worker automatizada simula su ciclo de instalación, activación y solicitudes.
+La revisión adaptable se realizó en Chrome, no en dispositivos físicos. La previsualización interna usa HTTP; la instalación PWA y el funcionamiento offline completo deben comprobarse en el HTTPS publicado o en localhost. El ciclo del service worker y la navegación sin red se verifican mediante pruebas simuladas.
 
-## Pendiente en tu nube
+## Comprobaciones en tu nube después de actualizar
 
-Una vez publicados el código, D1 y R2:
+1. Confirmar la migración 0002 sin cambiar el ID de D1 ni recrear los recursos.
+2. Verificar sincronización real computador ↔ teléfono de un cliente, instalación, equipo, plantilla e informe con fotografías.
+3. Producir un conflicto desde dos dispositivos y resolverlo conservando el resultado elegido.
+4. Abrir por HTTPS, desconectar internet, reabrir y guardar cambios; reconectar con la aplicación abierta y comprobar sincronización.
+5. Generar un PDF real con textos largos, hallazgos y fotografías; revisar saltos y numeración.
+6. Probar compartir por WhatsApp y correo en Android/iOS. Verificar un envío real si tienes correo configurado.
+7. Revisar que la IA mantenga los hechos registrados, incluidos los hallazgos.
+8. Comprobar una actualización con un borrador activo; cerrar los formularios de configuración antes de aplicarla.
+9. Descargar e importar un respaldo en un perfil de prueba; comprobar catálogos, plantillas, imágenes y registros archivados.
 
-1. Crear el administrador con tu SETUP_TOKEN.
-2. Confirmar sincronización real computador ↔ teléfono, incluyendo un conflicto intencional.
-3. Abrir una vez la aplicación por HTTPS, desconectar internet y comprobar reapertura, fotografías y guardado.
-4. Generar un PDF real con textos largos y varias fotografías; revisar sus saltos y numeración.
-5. Probar el menú nativo de compartir en Android/iOS, WhatsApp y el cliente de correo elegido.
-6. Si habilitas Resend, verificar un envío real desde un remitente autorizado.
-7. Si habilitas Workers AI, revisar la calidad y fidelidad de la redacción con tus casos reales.
-8. Publicar un segundo commit y comprobar actualización automática con un borrador activo.
-
-Estos pasos requieren tus recursos y configuración de Cloudflare. La entrega no afirma que ya estén desplegados ni verificados en tu cuenta.
+La entrega prepara el código para tu repositorio. No acredita que esta versión esté desplegada o probada en tu cuenta de Cloudflare.

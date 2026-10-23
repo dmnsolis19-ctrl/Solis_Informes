@@ -1,3 +1,18 @@
+# 2.1.0 — 23 de octubre de 2026
+
+- Clientes, instalaciones y equipos por empresa; búsqueda, edición, archivado y restauración.
+- Selección de datos guardados en informes y relación de activos adicionales con el historial.
+- Historial por ID de equipo, incluyendo revisiones y hallazgos de las intervenciones.
+- Hallazgos con condición observada, prioridad, recomendación, responsable, plazo, estado, cierre y referencias fotográficas estables.
+- Plantillas propias con base técnica/comercial, código, título, textos iniciales, verificaciones, mediciones, orden documental, campos adicionales obligatorios y secciones propias.
+- Copias de datos y plantillas en cada informe para conservar su contexto histórico.
+- Migración IndexedDB 3 y D1 0002 que conserva documentos, versiones y auditoría.
+- Sincronización de seis tipos de entidad, compatibilidad de lectura v2 y protección contra escrituras antiguas que perderían los campos nuevos.
+- TAG único por empresa en cliente y servidor; relaciones validadas dentro del espacio de trabajo.
+- Respaldo 3 con catálogos, plantillas y registros archivados; admite respaldos anteriores.
+- Nuevos módulos incluidos en caché offline y formularios adaptables a teléfono y tableta.
+- 38 pruebas automáticas y recorrido funcional en navegador.
+
 # 2.0.0 · 2026-10-23
 
 - Plataforma de documentos para múltiples perfiles de empresa.

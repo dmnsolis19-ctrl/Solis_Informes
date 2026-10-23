@@ -1,4 +1,12 @@
-# SOLIS Field Pro 2.0.0
+# Actualización 2.1.0 — gestión de operaciones
+
+Para actualizar la aplicación ya publicada, sigue **[ACTUALIZAR_v2.1.0.md](ACTUALIZAR_v2.1.0.md)**. Conserva tu configuración Cloudflare actual.
+
+Esta versión agrega clientes e instalaciones reutilizables, catálogo de equipos con historial, hallazgos vinculados a fotografías y plantillas por empresa con orden y campos configurables. Los nuevos registros participan en el guardado offline, respaldo y sincronización con resolución de conflictos.
+
+Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue la guía de GitHub/Cloudflare. Para una actualización no hagas esa copia.
+
+# SOLIS Field Pro 2.1.0
 
 Plataforma de informes técnicos y propuestas con marca de empresa configurable, trabajo offline, control de revisiones, evidencias y sincronización automática con Cloudflare.
 

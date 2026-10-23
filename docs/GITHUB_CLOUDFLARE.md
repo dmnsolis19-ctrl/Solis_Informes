@@ -1,3 +1,5 @@
+> Si ya tienes la aplicación publicada, utiliza primero `ACTUALIZAR_v2.1.0.md` y conserva tu `wrangler.jsonc`. Las instrucciones siguientes corresponden a una instalación nueva. En una instalación nueva, comienza copiando `wrangler.example.jsonc` como `wrangler.jsonc`.
+
 # Publicar desde GitHub en Cloudflare
 
 Esta entrega está preparada para **Cloudflare Workers con Static Assets**, D1 y R2. No uses el asistente de Cloudflare Pages ni un preset de Next.js para esta versión.

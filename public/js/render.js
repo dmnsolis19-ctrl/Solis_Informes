@@ -1,3 +1,4 @@
+import {sectionDefinitions} from './catalogs.js';
 import {templates,escapeHtml as e,safeImage,fmtDate,proposalTotals,money,nextService} from './domain.js';
 const lines=v=>e(v||'No registrado').replaceAll('\n','<br>');
 const section=(title,body)=>`<section class="doc-section"><h2>${e(title)}</h2>${body}</section>`;
@@ -6,8 +7,10 @@ const cells=rows=>`<dl class="doc-facts">${rows.filter(([,v])=>v!==undefined&&v!
 const table=(head,rows)=>`<table><thead><tr>${head.map(h=>`<th>${e(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 const row=values=>`<tr>${values.map(v=>`<td>${e(v??'—')}</td>`).join('')}</tr>`;
 export function renderReport(r){
- const c=r.companySnapshot||{},t=templates[r.template]||templates.general,colour=/^#[a-f\d]{6}$/i.test(c.color)?c.color:'#123f54',accent=/^#[a-f\d]{6}$/i.test(c.accent)?c.accent:'#129e85';let n=0;
- const block=(title,body)=>section(`${String(++n).padStart(2,'0')}. ${title}`,body);
+ const c=r.companySnapshot||{},t={...(templates[r.template]||templates.general),...(r.templateSnapshot||{})},colour=/^#[a-f\d]{6}$/i.test(c.color)?c.color:'#123f54',accent=/^#[a-f\d]{6}$/i.test(c.accent)?c.accent:'#129e85';
+ const parts=[];const keys=Object.fromEntries(Object.entries(sectionDefinitions).map(([key,title])=>[title,key]));
+ const block=(title,body)=>{parts.push({key:keys[title],title,body});return '';};
+ const layout=()=>{const order=r.templateSnapshot?.sectionOrder||Object.keys(sectionDefinitions),ordered=[...parts].sort((a,b)=>order.indexOf(a.key)-order.indexOf(b.key));return ordered.map((p,i)=>section(`${String(i+1).padStart(2,'0')}. ${p.title}`,p.body)).join('');};
  const signature=(label,image,name)=>`<div class="doc-signature"><h3>${e(label)}</h3>${safeImage(image)?`<img src="${safeImage(image)}" alt="Firma">`:'<div class="unsigned">Sin firma registrada</div>'}<strong>${e(name||'—')}</strong></div>`;
  const eq=r.equipment||{};const next=nextService(r);
  return `<article class="document" style="--doc-primary:${colour};--doc-accent:${accent}">
@@ -21,10 +24,13 @@ export function renderReport(r){
  ${r.checklist?.length?block('Inspección y verificaciones',table(['Punto de inspección','Condición','Observación'],r.checklist.map(i=>row([i.label,i.condition||'Sin evaluar',i.notes])))):''}
  ${block('Desarrollo y resultados',text('Actividades y pruebas realizadas',r.workPerformed)+text('Hallazgos / diagnóstico',r.diagnosis)+text('Materiales y repuestos',r.materials)+text('Observaciones',r.observations))}
  ${r.template==='proposal'?block('Propuesta económica',table(['Descripción','Cantidad','Unidad','Precio unitario','Total'],r.proposalItems.map(i=>row([i.description,i.quantity,i.unit,money(Number(i.price)||0,c.currency),money((Number(i.quantity)||0)*(Number(i.price)||0),c.currency)])))+`<div class="doc-totals">${Object.entries(proposalTotals(r)).map(([k,v])=>`<div><span>${({subtotal:'Subtotal',tax:`Impuesto (${r.taxRate}%)`,total:'Total'})[k]}</span><b>${e(money(v,c.currency))}</b></div>`).join('')}</div>`+text('Condiciones comerciales',r.proposalTerms)+cells([['Vigencia',r.proposalValidity+' días'],['Plazo de ejecución',r.proposalDeadline]])):''}
+ ${r.findings?.length?block('Hallazgos',r.findings.map((f,i)=>`<div class="doc-finding"><h3>H-${String(i+1).padStart(2,'0')}. ${e(f.title)}</h3>${cells([['Prioridad',f.priority],['TAG / sistema',f.equipmentTag],['Responsable',f.owner],['Fecha objetivo',fmtDate(f.dueDate)],['Estado',f.status]])}${text('Condición observada',f.description)}${text('Acción recomendada',f.recommendation)}${text('Evidencia de cierre',f.resolution)}<p class="doc-note">Evidencias: ${e(f.photoIds?.length?f.photoIds.map(id=>{const index=r.photos.findIndex(p=>p.id===id);return index<0?'Referencia no disponible':`Figura ${index+1}`;}).join(', '):'Sin fotografías vinculadas')}</p></div>`).join('')):''}
  ${block('Conclusiones y recomendaciones',text('Conclusiones',r.conclusions)+text('Recomendaciones',r.recommendations))}
  ${r.actions?.length?block('Plan de acciones',table(['Acción','Prioridad','Responsable','Fecha objetivo','Estado'],r.actions.map(a=>row([a.description,a.priority,a.owner,fmtDate(a.dueDate),a.status])))):''}
  ${r.photos?.length?block('Registro de evidencias',`<div class="doc-photos">${r.photos.map((p,i)=>`<figure>${safeImage(p.dataUrl)?`<img src="${safeImage(p.dataUrl)}" alt="Evidencia ${i+1}">`:''}<figcaption><b>Figura ${i+1}. </b>${e(p.caption||'Sin descripción')}${p.tag?`<small>Referencia: ${e(p.tag)}</small>`:''}</figcaption></figure>`).join('')}</div>`):''}
+ ${r.customSections?.some(s=>s.content?.trim())?block('Secciones adicionales',r.customSections.map(s=>text(s.title,s.content)).join('')):''}
  ${block('Responsables y recepción',`<div class="doc-signatures">${signature('ELABORADO POR',r.technicianSignature,r.technician)}${signature('RECEPCIÓN DEL CLIENTE',r.clientSignature,r.customerName)}</div><p class="doc-note">Las firmas registran la elaboración y recepción del documento. Las conclusiones se limitan al alcance y las evidencias descritas.</p>`)}
+ ${layout()}
  <footer class="doc-footer"><div><b>${e(c.tradeName||c.name||'')}</b><span>${e(c.footer||c.address||'')}</span></div><span>${e(r.folio)} · Rev. ${r.revision||0}</span></footer></article>`;
 }
 export function renderDocument(r,css=''){return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(r.folio)} · ${e(r.title)}</title>${css?`<style>${css}</style>`:'<link rel="stylesheet" href="/print.css">'}</head><body>${renderReport(r)}</body></html>`;}
