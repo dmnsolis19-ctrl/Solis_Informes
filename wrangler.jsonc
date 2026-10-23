@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "solis_informes",
+  "name": "solis-informes",
   "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
   "assets": {
