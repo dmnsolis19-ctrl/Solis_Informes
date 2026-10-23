@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "solis-field",
-      "database_id": "REEMPLAZAR_CON_ID_D1",
+      "database_id": "ffaddb6f-a87b-41ca-b15f-7feaa716f47b",
       "migrations_dir": "migrations"
     }
   ],
