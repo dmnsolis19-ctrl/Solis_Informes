@@ -1,11 +1,13 @@
-SOLIS FIELD PRO 3.1.0
+SOLIS Field Pro 3.4.0
 
-1. Descarga un respaldo de tu aplicación antes de actualizar.
-2. Sigue ACTUALIZAR_v3.1.0.md.
-3. Copia el contenido del ZIP a la raíz de Solis_Informes.
-4. Conserva tu wrangler.jsonc actual y los recursos D1/R2.
-5. Build: node scripts/ci.mjs; Deploy: node scripts/deploy.mjs.
-6. La nueva pantalla «Configuración y diagnóstico» orienta la puesta en marcha.
-7. En borradores, «Marcar evidencia» crea una copia anotada y conserva el original.
+Lee ACTUALIZAR_v3.4.0.md antes de actualizar.
+La procedencia, cambios y validación están en docs/REVISION_3.4.md.
 
-Alcance y uso: docs/USO_V3.md y docs/VERIFICACION.md.
+Incluye el proyecto completo. Conserva tu wrangler.jsonc, D1, R2, bindings y secretos.
+No requiere migraciones nuevas desde 3.2.0 o la 3.3.0 descrita.
+
+Comprobación: npm run ci (Node.js 24 recomendado).
+Inicio local: npm run dev.
+
+Copias resguardadas: Sincronización -> Copias resguardadas.
+Bases por especialidad: Plantillas -> buscador y filtro.

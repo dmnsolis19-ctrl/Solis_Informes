@@ -1,3 +1,31 @@
+# 3.4.0 · Borradores protegidos y servicios multiespecialidad · 24 de octubre de 2026
+
+- Recuperación de las cuatro bases multiespecialidad descritas para 3.3.0 sobre el código verificado de 3.2.0. El ZIP 3.3.0 no estuvo disponible para comparación literal.
+- Trece bases documentales y filtros por especialidad/servicio, sin restringir las plantillas propias.
+- Comparación de mutaciones y versiones en la transacción local de guardado; impide reemplazar registros modificados por otra pestaña.
+- Los borradores de informe que pierden la carrera se guardan como copias recuperables, sin modificar la edición ya guardada.
+- Recuperación idempotente como informe nuevo, sin firmas ni autorizaciones heredadas, y respaldo/importación de las copias.
+- Captura del borrador al ejecutar el guardado en cola, después de terminar el anterior, para evitar falsos conflictos propios.
+- Una actualización remota no adelanta la versión de un formulario con cambios sin guardar.
+- Recorrido documental y siguiente paso visible en el editor.
+- El PDF conserva su nombre tanto en la generación inicial como desde la caché privada.
+- El script de despliegue admite comentarios y comas finales en wrangler.jsonc.
+- Sin nuevas dependencias, migraciones ni servicios externos.
+
+# 3.2.0 · Recuperación y visibilidad de sincronización · 24 de octubre de 2026
+
+- El respaldo espera el guardado del borrador y lee todas las entidades y notas en una transacción.
+- Incluye solicitudes de revisión; al importarlas quedan por revisar, sin autorización implícita de envío.
+- Vista previa de importación con recuentos de registros nuevos, existentes y archivados.
+- Valida listas, versiones, empresas, referencias, TAG por empresa y folio/revisión antes de escribir; repite la validación dentro de la transacción de importación.
+- Conserva íntegramente los registros existentes y sus notas. Revierte toda la importación si un guardado falla.
+- Tabla de cambios pendientes de la empresa activa con filtros y detalle de errores persistidos por registro.
+- Los rechazos de contenido o permisos no interrumpen el resto de envíos. Los fallos de sesión, red o servidor siguen interrumpiendo la operación.
+- Las llamadas simultáneas a sincronizar esperan el mismo trabajo en curso.
+- Indica el espacio estimado, la persistencia del navegador y la última descarga de respaldo solicitada.
+- Diagnóstico de servicios según respuesta real de /api/status; distingue declaración de configuración y prueba funcional.
+- Dos módulos de recuperación independientes; sin nuevas dependencias de ejecución ni migraciones D1/IndexedDB.
+
 # 3.0.0 · Operación, revisión y conocimiento
 
 - Panel operativo, filtros, actividad técnica, tendencias y alertas configurables.

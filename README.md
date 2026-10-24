@@ -1,14 +1,36 @@
-# SOLIS Field Pro 3.0.0
+# SOLIS Field Pro 3.4.0
 
 Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, propuestas y seguimiento de intervenciones. Conserva el trabajo local y sincroniza con Cloudflare al recuperar conexión, con la aplicación abierta.
 
-**Si ya está publicada, empieza por [ACTUALIZAR_v3.0.0.md](ACTUALIZAR_v3.0.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
+**Si ya está publicada, empieza por [ACTUALIZAR_v3.4.0.md](ACTUALIZAR_v3.4.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
 
 Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
 
+## Novedades 3.4.0
+
+- Bases de climatización, electricidad, automatización industrial y fotovoltaica; se conservan instrumentación, puesta en marcha, diagnósticos, fallas y servicios generales.
+- Buscador por servicio y filtro por especialidad, conservando las plantillas propias para futuros trabajos.
+- Protección contra guardados obsoletos entre pestañas: el informe ya guardado no se reemplaza y el borrador alternativo queda en **Copias resguardadas**.
+- Recuperación como informe independiente, con nuevo folio, revisión y firmas propias; las copias también se incluyen en los respaldos.
+- Recorrido documental Preparar → Revisar → Aprobar → Entregar con acceso al siguiente paso.
+- Corrección del nombre del PDF descargado desde caché y lectura de configuración JSONC con comentarios y comas finales.
+
+Consulta [docs/REVISION_3.4.md](docs/REVISION_3.4.md) para la procedencia de esta entrega y su validación.
+
+## Novedades anteriores: 3.2.0
+
+- Respaldo después de guardar el borrador y lectura consistente de todos los almacenes en una transacción.
+- Vista previa de importación con recuentos, comprobación de referencias y protección contra IDs, TAG y folios duplicados.
+- Recuperación de solicitudes de revisión como pendientes de revisión humana, sin enviarlas automáticamente.
+- Lista de cambios pendientes por empresa y estado, con errores por registro y solicitudes de estado.
+- Un registro rechazado no bloquea los demás envíos; las solicitudes simultáneas esperan la misma sincronización.
+- Espacio estimado y persistencia real del navegador. Diagnóstico basado en la respuesta del servidor.
+
+Consulta [docs/REVISION_3.2.md](docs/REVISION_3.2.md) para la revisión y los límites de la validación.
+
 ## Funciones
 
-- Nueve bases documentales y plantillas propias por empresa, con marca, logo, colores, estructura, encabezado y pie. Cada informe conserva una copia de su empresa y plantilla.
+- Trece bases documentales y plantillas propias por empresa, con marca, logo, colores, estructura, encabezado y pie. Cada informe conserva una copia de su empresa y plantilla.
 - Diseñador de bloques: texto, número, fecha, selección, tabla, fotografía y firma; orden configurable, condiciones de visibilidad y obligatoriedad. Historial central de versiones de plantilla.
 - Directorio de clientes, instalaciones y equipos; historial por activo, fotografías, materiales y tendencias de mediciones con la misma variable y unidad.
 - Panel de operaciones con filtros, estados, actividad por técnico, próximos trabajos y alertas por umbral, recurrencia o vencimiento.
