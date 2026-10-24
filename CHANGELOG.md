@@ -39,3 +39,10 @@
 - Asistente de redacción mediante Workers AI.
 - Ajustes de escritorio, teléfonos y tablets.
 - Pruebas automatizadas y flujo GitHub → Cloudflare documentado.
+
+
+## 3.1.0 — Diagnóstico y evidencias
+- Nueva pantalla «Configuración y diagnóstico» con estado local, sesión, cambios pendientes y guía de bindings/secrets.
+- El diagnóstico distingue las condiciones visibles del dispositivo de las pruebas reales de servicios remotos; no transmite informes automáticamente.
+- Editor de evidencias: permite dibujar marcas sobre una copia de la fotografía y añade la copia anotada como nueva evidencia, conservando el original.
+- Diseño adaptable para pantallas pequeñas.

@@ -1,9 +1,9 @@
 {
   "name": "solis-field-pro",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "type": "module",
-  "description": "Informes profesionales offline con sincronizaci\u00f3n Cloudflare",
+  "description": "Informes profesionales offline con sincronización Cloudflare",
   "engines": {
     "node": ">=22.13"
   },

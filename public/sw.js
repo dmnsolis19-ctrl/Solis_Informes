@@ -1,4 +1,4 @@
-const CACHE='solis-field-pro-34ba469229e9';
+const CACHE='solis-field-pro-c969078719cb';
 const ASSETS=["/icon-192.png","/icon-512.png","/icon.svg","/index.html","/js/accounts-ui.js","/js/app.js","/js/catalogs.js","/js/designer.js","/js/domain.js","/js/enterprise-ui.js","/js/field-tools.js","/js/operations.js","/js/render.js","/js/store.js","/js/sync.js","/js/vendor/jsqr.js","/js/vendor/qrcodegen.js","/js/workspace-ui.js","/manifest.webmanifest","/print.css","/solis-logo.png","/styles.css","/"];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('solis-field')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

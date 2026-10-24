@@ -1,16 +1,11 @@
-SOLIS FIELD PRO 3.0.0
+SOLIS FIELD PRO 3.1.0
 
-1. Descarga respaldo de tu aplicación actual.
-2. Sigue ACTUALIZAR_v3.0.0.md.
+1. Descarga un respaldo de tu aplicación antes de actualizar.
+2. Sigue ACTUALIZAR_v3.1.0.md.
 3. Copia el contenido del ZIP a la raíz de Solis_Informes.
-4. Conserva tu wrangler.jsonc actual: el ZIP no lo incluye.
-5. Conserva D1/R2 y las migraciones 0001, 0002 y 0003.
-6. Build: node scripts/ci.mjs
-   Deploy: node scripts/deploy.mjs
-7. Verifica v3.0.0 y configura roles en Equipo y servicios.
+4. Conserva tu wrangler.jsonc actual y los recursos D1/R2.
+5. Build: node scripts/ci.mjs; Deploy: node scripts/deploy.mjs.
+6. La nueva pantalla «Configuración y diagnóstico» orienta la puesta en marcha.
+7. En borradores, «Marcar evidencia» crea una copia anotada y conserva el original.
 
-Nuevas funciones y recorridos: docs/USO_V3.md
-Alcance de pruebas y validación en nube: docs/VERIFICACION.md
-
-Este paquete contiene código preparado y probado localmente.
-Su publicación en tu Cloudflare se realiza desde tu repositorio GitHub.
+Alcance y uso: docs/USO_V3.md y docs/VERIFICACION.md.
