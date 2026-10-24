@@ -1,82 +1,68 @@
-# Actualización 2.1.0 — gestión de operaciones
+# SOLIS Field Pro 3.0.0
 
-Para actualizar la aplicación ya publicada, sigue **[ACTUALIZAR_v2.1.0.md](ACTUALIZAR_v2.1.0.md)**. Conserva tu configuración Cloudflare actual.
+Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, propuestas y seguimiento de intervenciones. Conserva el trabajo local y sincroniza con Cloudflare al recuperar conexión, con la aplicación abierta.
 
-Esta versión agrega clientes e instalaciones reutilizables, catálogo de equipos con historial, hallazgos vinculados a fotografías y plantillas por empresa con orden y campos configurables. Los nuevos registros participan en el guardado offline, respaldo y sincronización con resolución de conflictos.
+**Si ya está publicada, empieza por [ACTUALIZAR_v3.0.0.md](ACTUALIZAR_v3.0.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
 
-Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue la guía de GitHub/Cloudflare. Para una actualización no hagas esa copia.
+Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
 
-# SOLIS Field Pro 2.1.0
+## Funciones
 
-Plataforma de informes técnicos y propuestas con marca de empresa configurable, trabajo offline, control de revisiones, evidencias y sincronización automática con Cloudflare.
+- Nueve bases documentales y plantillas propias por empresa, con marca, logo, colores, estructura, encabezado y pie. Cada informe conserva una copia de su empresa y plantilla.
+- Diseñador de bloques: texto, número, fecha, selección, tabla, fotografía y firma; orden configurable, condiciones de visibilidad y obligatoriedad. Historial central de versiones de plantilla.
+- Directorio de clientes, instalaciones y equipos; historial por activo, fotografías, materiales y tendencias de mediciones con la misma variable y unidad.
+- Panel de operaciones con filtros, estados, actividad por técnico, próximos trabajos y alertas por umbral, recurrencia o vencimiento.
+- Hallazgos con prioridad, responsable, fecha, evidencia de cierre y referencias a fotografías. Tareas independientes para seguir pendientes sin modificar el documento emitido.
+- Órdenes y planes derivados de documentos aprobados o emitidos. Planificación periódica mediante «Programar siguiente», sin duplicar una intervención ya programada.
+- Flujo de servidor: Borrador → En revisión → Aprobado → Emitido. Revisión técnica, devolución motivada y auditoría. Emitidos bloqueados; cambios posteriores mediante revisión.
+- Usuarios con roles administrador, técnico, supervisor, aprobador y cliente; empresas autorizadas por cuenta y organizaciones con espacios de datos separados.
+- Portal restringido al cliente: sus documentos emitidos, anexos PDF, acciones y comentarios registrados.
+- Etiquetas QR locales, lectura por cámara o imagen y búsqueda por TAG. Notas de voz guardadas en el dispositivo y transcripción revisable mediante Workers AI.
+- Biblioteca de documentos autorizados, importación de texto, PDF original privado, conversión PDF a texto con Workers AI y consultas que muestran las fuentes utilizadas.
+- IA para redactar con los datos del informe y revisión de coherencia basada en reglas. Las propuestas requieren aceptación del responsable.
+- Documento A4, anexos PDF privados, impresión offline y PDF de servidor con páginas numeradas. Caché privada de PDF emitidos.
+- Enlaces temporales revocables, WhatsApp, correo del dispositivo y entrega desde servidor mediante Resend configurado.
+- PWA adaptable a teléfono, tablet y escritorio, sin CDN; guardado automático, respaldo, papelera, importación y conflictos visibles. Sincronización con reintentos, referencias ordenadas y control de cambios concurrentes.
 
-**Comienza por [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).** Allí está el recorrido completo para subir el proyecto a GitHub y conectarlo a tu Worker.
+[docs/USO_V3.md](docs/USO_V3.md) explica los recorridos y condiciones de cada función. [docs/VERIFICACION.md](docs/VERIFICACION.md) diferencia las pruebas realizadas de la validación pendiente en tu nube.
 
-## Incluido
+## Desarrollo y comprobación
 
-- Nueve plantillas: mantenimiento de grupos electrógenos, instrumentación, levantamiento, diagnóstico, informe general, propuesta técnica/económica, evaluación en terreno y análisis de falla, más pruebas/puesta en marcha.
-- Perfiles de empresa con razón social, identificación, dirección, contacto, logo, colores, moneda y pie de página. Los informes conservan una copia de los datos de la empresa.
-- Editor por pasos; objetivos, alcance, limitaciones, actividades, hallazgos, conclusiones, recomendaciones, múltiples equipos y plan de acciones.
-- Partidas comerciales, cantidades, precios, impuesto, total, vigencia y condiciones de las propuestas.
-- Guardado automático local, folios con contador e identificador de dispositivo, historial, revisión y emisión bloqueada.
-- Fotografías completas, descripción y referencia al hallazgo; firmas dibujadas opcionales.
-- PDF A4 desde Cloudflare Browser Run con numeración de páginas; impresión / Guardar como PDF disponible offline.
-- Enlaces de entrega de siete días, revocación, WhatsApp, correo y menú nativo de compartir PDF cuando el dispositivo lo permite.
-- Correo desde servidor mediante Resend, opcional. El correo incluye el enlace privado; el destinatario descarga el PDF desde ese enlace.
-- Asistente de redacción mediante Workers AI con propuesta editable y aceptación manual.
-- PWA sin dependencias de CDN. Sincroniza al recuperar internet, al volver a la app y aproximadamente cada 30 segundos mientras está abierta. Usa reintentos progresivos si falla el servidor.
-- Conflictos visibles y comparables; no se sobrescriben silenciosamente cambios de dos dispositivos.
-- Papelera restaurable; importación que combina registros nuevos sin reemplazar los existentes.
-- Sesiones con cookies HttpOnly; contraseñas PBKDF2; aislamiento de datos por espacio de trabajo; archivos privados en R2.
-- Diseño adaptado a escritorio, teléfono y tablet.
-
-## Probar en tu computador
-
-Requiere Node.js 22.13 o superior; se recomienda Node.js 24.
+Node.js 22.13 o superior; recomendado Node.js 24. Sin dependencias de ejecución instaladas con npm.
 
 ```bash
 node scripts/dev.mjs
 ```
 
-Abre `http://localhost:4173`. En Windows también puedes usar `INICIAR_APP.bat`.
+Abre `http://localhost:4173`. Windows: `INICIAR_APP.bat`.
 
-El servidor de prueba reproduce la API con SQLite local y archivos locales. En **Sincronización → Primer acceso del administrador**, usa el código de prueba `solis-local-installation-2026`, tu correo y una contraseña de al menos 12 caracteres. Ese código es exclusivo del servidor local; no funciona en Cloudflare. Los datos se guardan en `.local-data/`, excluido de Git y del paquete de entrega.
-
-El asistente IA, PDF directo y correo usan servicios externos y no están simulados en la interfaz local. La impresión offline sí está disponible.
-
-## Verificación
+El servidor de desarrollo usa SQLite y archivos locales. Para la primera instalación local, el código es `solis-local-installation-2026`; no funciona en Cloudflare. Usa un correo de prueba y contraseña de al menos 12 caracteres. Sus datos quedan en `.local-data/`, excluido del paquete. IA, transcripción, conversión PDF, correo y PDF de servidor necesitan sus servicios reales y no están simulados en la interfaz.
 
 ```bash
 node scripts/ci.mjs
 ```
 
-Las pruebas usan SQLite real a través de un adaptador de la interfaz D1 y R2 en memoria. Las respuestas de IA y generación PDF se prueban con dobles de servicio; no se consumen servicios externos ni se envían correos reales.
+Las pruebas usan SQLite real mediante un adaptador D1, R2 en memoria y dobles para servicios externos. No consumen IA, envían correo ni despliegan recursos del usuario.
 
-Consulta [docs/VERIFICACION.md](docs/VERIFICACION.md) para el alcance y las pruebas pendientes en tu cuenta.
+## Arquitectura
 
-## Estructura
+| Carpeta | Contenido |
+|---|---|
+| `public/` | Interfaz, reglas de dominio, IndexedDB y service worker |
+| `worker/` | API, sesiones, permisos, sincronización y servicios |
+| `migrations/` | Migraciones D1 0001, 0002 y 0003; historial y auditoría |
+| `scripts/` | Servidor local, CI, caché y despliegue |
+| `tests/` | Dominio, migración, API, permisos, sincronización y offline |
+| `docs/` | Instalación, uso y verificación |
 
-- `public/`: interfaz sin proceso de compilación de framework, módulos ES, estilos y PWA.
-- `worker/`: API Cloudflare, autenticación, validación y servicios.
-- `migrations/`: esquema D1, historial de cambios y control de versiones.
-- `scripts/`: servidor local, compilación de caché, comprobaciones y despliegue.
-- `tests/`: pruebas de reglas, concurrencia, seguridad, almacenamiento y servicios.
-- `wrangler.jsonc`: recursos y nombre del Worker.
+Los QR usan bibliotecas locales con licencias incluidas en `THIRD_PARTY_NOTICES.md`.
 
-Esta versión sustituye el proyecto anterior de Next/Vinext por módulos web y un Worker independiente. Reduce las dependencias necesarias para el trabajo offline y facilita el despliegue directo desde GitHub. No mezcles los archivos de ambas versiones. Conserva el respaldo de la v1.2 antes de actualizar.
+## Conservación de datos y límites
 
-## Datos existentes
+Se conserva la base IndexedDB `solis-generator-maintenance` y sus registros al abrir en el mismo origen y perfil. Si cambias de dirección, navegador o dispositivo, exporta e importa un respaldo. Publicar código en GitHub no traslada datos locales. Las migraciones D1 conservan documentos, versiones e historial existentes.
 
-La app conserva el nombre de la base IndexedDB anterior (`solis-generator-maintenance`) y migra sus registros al abrirla en el **mismo origen y perfil del navegador**. Los informes finalizados de la versión anterior se conservan bloqueados y se identifican como documentos legados importados. No se inventan los nuevos campos faltantes; para completarlos, crea una revisión.
+Cada cuenta que trabaje offline debe usar un perfil propio del navegador. La sincronización se vincula a esa cuenta y organización. Los datos locales no se cifran por la aplicación; cerrar sesión conserva el trabajo del dispositivo. Cambiar permisos en el servidor evita nuevos accesos, pero no borra copias descargadas previamente.
 
-Si cambias de dirección web, navegador o dispositivo, usa **Descargar respaldo** en la versión anterior y **Importar** en esta versión. El almacenamiento del navegador pertenece a cada origen. GitHub y la publicación del código no trasladan los informes locales.
+Se necesita una primera apertura con internet para preparar la PWA. Las actualizaciones se activan después de guardar el borrador; esperan si hay un formulario abierto. La sincronización necesita sesión y aplicación abierta; no se garantiza con el navegador cerrado. Las solicitudes de aprobación offline permanecen pendientes hasta que el servidor comprueba permisos y versión.
 
-## Límites operativos
-
-La sincronización requiere D1/R2 configurados y una sesión activa. Se ejecuta mientras la aplicación está abierta; los navegadores móviles no garantizan trabajo en segundo plano con la aplicación cerrada. Si se vence la sesión, el guardado local continúa y debes iniciar sesión para sincronizar.
-
-El mismo espacio puede contener varias empresas y usuarios. Los usuarios del espacio comparten todas sus empresas; no se ofrece todavía una separación de permisos por empresa ni un sistema de suscripciones SaaS. Para organizaciones completamente independientes, utiliza espacios/despliegues separados. La base local no está cifrada por la aplicación: en dispositivos compartidos, utiliza perfiles distintos del navegador.
-
-La nueva versión de la app se descarga cuando vuelve la conexión. Se guarda el informe activo antes de activar la actualización y se intenta recuperar el editor. Si el guardado falla, la actualización espera. Debes abrir la app al menos una vez con internet para preparar la caché offline.
-
-La firma dibujada registra una imagen; no constituye una firma digital certificada. La IA propone texto y requiere revisión técnica. Configura los servicios y sus límites de consumo antes de habilitarlos para varios usuarios.
+Las alertas se calculan al consultar el panel. Esta entrega no envía avisos programados de forma desatendida. «Programar siguiente» genera la próxima intervención con una acción del usuario. Las firmas dibujadas son imágenes y no firmas digitales certificadas. La IA requiere revisión técnica; los servicios Cloudflare/Resend necesitan configuración y sus límites de consumo. No incluye facturación de suscripciones SaaS ni automatización de WhatsApp Business.

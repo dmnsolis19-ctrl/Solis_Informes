@@ -1,10 +1,16 @@
-SOLIS FIELD PRO 2.1.0
+SOLIS FIELD PRO 3.0.0
 
-Si tu aplicación ya está funcionando en Cloudflare, lee primero ACTUALIZAR_v2.1.0.md.
-Conserva el wrangler.jsonc que ya tienes en GitHub. Este ZIP no lo reemplaza.
-No recrees D1 ni R2. Sube la nueva migración junto con el código.
+1. Descarga respaldo de tu aplicación actual.
+2. Sigue ACTUALIZAR_v3.0.0.md.
+3. Copia el contenido del ZIP a la raíz de Solis_Informes.
+4. Conserva tu wrangler.jsonc actual: el ZIP no lo incluye.
+5. Conserva D1/R2 y las migraciones 0001, 0002 y 0003.
+6. Build: node scripts/ci.mjs
+   Deploy: node scripts/deploy.mjs
+7. Verifica v3.0.0 y configura roles en Equipo y servicios.
 
-Novedades: clientes e instalaciones, equipos con historial, hallazgos y plantillas configurables.
+Nuevas funciones y recorridos: docs/USO_V3.md
+Alcance de pruebas y validación en nube: docs/VERIFICACION.md
 
-Prueba local: ejecuta INICIAR_APP.bat en Windows o npm run dev con Node 22.13 o superior.
-Instalación nueva: copia wrangler.example.jsonc como wrangler.jsonc y configura tus recursos siguiendo docs/GITHUB_CLOUDFLARE.md.
+Este paquete contiene código preparado y probado localmente.
+Su publicación en tu Cloudflare se realiza desde tu repositorio GitHub.

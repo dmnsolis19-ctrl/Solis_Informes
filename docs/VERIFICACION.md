@@ -1,56 +1,64 @@
-# Verificación de la entrega 2.1.0
+# Verificación de la entrega 3.0.0
 
 Fecha: 23 de octubre de 2026.
 
-## Pruebas automáticas
+## Resultado automático
 
-38 pruebas superadas con `node scripts/ci.mjs`, revisión de sintaxis de 21 módulos y compilación de 15 recursos locales. No se requieren recursos de CDN para abrir la interfaz.
+`node scripts/ci.mjs`: **54 pruebas superadas**, sintaxis de **31 módulos** y compilación de **22 recursos locales**. Build de interfaz: `34ba469229e9`. No hay dependencias de CDN para abrir la interfaz, generar QR o decodificarlos.
 
-Se conserva la cobertura anterior: nueve plantillas, emisión, revisiones, presupuestos, fecha local, importación anterior, concurrencia, autenticación, aislamiento de espacios, fotografías privadas, enlaces, caché offline y contratos de IA, correo y PDF.
+Las pruebas usan SQLite real mediante un adaptador D1 y R2 en memoria. Los contratos de IA, transcripción, extracción y PDF se verifican con dobles de servicio. No se enviaron correos ni se consumieron servicios Cloudflare del usuario.
 
-Cobertura nueva:
+Cobertura:
 
-- Migración SQL sobre una base con documentos existentes: conserva datos, versiones, secuencia e historial y mantiene los índices y disparadores.
-- Selección de equipos que completa cliente e instalación y copia los datos al informe.
-- Historial por ID estable, conservando revisiones aunque cambie el TAG.
-- Plantillas independientes con orden documental, verificaciones, mediciones inicialmente vacías, secciones y campos adicionales obligatorios.
-- Hallazgos: contenido mínimo, responsable y plazo para prioridades altas, evidencia de cierre y referencias de fotografías existentes.
-- Texto escapado y citas a las figuras en el documento.
-- Sincronización de catálogos, compatibilidad de lectura con clientes anteriores y rechazo de escrituras antiguas que perderían relaciones.
-- TAG único por empresa, conflictos, archivado y restauración con historial.
-- Un equipo reubicado no cambia la ubicación registrada en un informe anterior ni impide sincronizarlo.
-- Plantillas sincronizadas y validación de sus requisitos en el servidor antes de emitir.
-- Impedimento de transferir registros existentes entre empresas.
-- Precarga de los dos módulos nuevos en la caché offline.
+- Nueve plantillas, validación de contenido, emisión, revisión, cálculo de propuestas y fecha local.
+- Migraciones 0001 → 0002 → 0003 con documentos existentes: conserva registros, versiones, secuencia e historial, índices únicos y disparadores.
+- Catálogos por empresa, TAG único, copia histórica, hallazgos, fotografías y secciones de plantilla.
+- Bloques condicionales obligatorios, tablas, firmas, selecciones válidas y escape de contenido.
+- Lecturas vacías, unidades, revisión más reciente, límites configurados, recurrencias y vencimientos.
+- Tareas derivadas con IDs estables y propuestas sin precios ni trabajos inventados.
+- QR generado y decodificado localmente por implementaciones independientes.
+- Cookies HttpOnly, instalación única, origen de peticiones, cuentas y espacios independientes.
+- Acceso por empresa, propiedad técnica, prohibición de falsificar aprobaciones y secuencia de revisión/aprobación/emisión.
+- Petición de flujo repetida en concurrencia: un solo evento de auditoría.
+- Emitido inmutable; nueva revisión sin firmas ni autorizaciones previas.
+- Portal: excluye borradores y otros clientes; comentarios y anexos limitados al cliente correspondiente.
+- R2 privado, impedimento de reutilizar archivos de otra empresa mediante sincronización o generación de PDF.
+- PDF adjunto separado de D1 y reutilización de PDF emitido desde caché privada.
+- Consulta limitada a fuentes autorizadas de la empresa y contratos de transcripción y PDF a texto revisables.
+- Cambios concurrentes, confirmación de sync sin borrar modificaciones posteriores, tombstones y restauración.
+- Sincronizador de la aplicación contra Worker y SQLite: crea empresa/cliente/informe/tarea en orden válido; recupera PDF a datos locales para uso sin red.
+- Solicitud de estado offline permanece pendiente; se aplica tras sincronizar o se invalida si cambió el contenido.
+- Caché de todos los módulos nuevos, navegación simulada sin red, exclusión de API/enlaces y activación controlada.
+- Compatibilidad de lectura con clientes anteriores y rechazo de escrituras que perderían datos nuevos.
 
-El adaptador de pruebas usa SQLite real. R2 se reproduce en memoria; Workers AI y Browser Run utilizan dobles de servicio. No se enviaron correos, no se consumió IA ni se generó un PDF real en los recursos Cloudflare del usuario.
+## Recorrido en navegador
 
-## Revisión en navegador
+Verificado en Chrome con datos de demostración conservados de la versión anterior:
 
-Recorrido verificado con datos de demostración:
+1. Abre la versión 3 y muestra el panel y sus nuevos módulos.
+2. Conserva cliente, instalación, equipo, plantilla y borrador de la versión 2.1.
+3. Genera una tarea desde el hallazgo «Humedad en sello» y la presenta en seguimiento.
+4. Guarda un procedimiento autorizado; consulta «humedad en bomba» y muestra fragmento, fuente y revisión.
+5. Configura una plantilla con selección, campo condicional y tabla.
+6. Crea un informe; al elegir modalidad Completa aparece el campo condicionado.
+7. Guarda la redacción adicional y una fila de resultados. La vista previa A4 conserva los valores, tabla e identidad corporativa.
+8. Revisa panel en contenedores de 390 y 768 px y formularios de tarea/orden: sin desbordamiento horizontal de página en las vistas examinadas.
 
-1. Crear cliente e instalación desde el directorio.
-2. Registrar un equipo con TAG y serie.
-3. Crear una plantilla propia, marcar Revisor como obligatorio, mover la sección Hallazgos y agregar una sección de procedimiento.
-4. Crear un informe desde el historial del equipo con esa plantilla.
-5. Comprobar cliente, instalación, datos de equipo y textos iniciales copiados.
-6. Completar redacción y sección propia; agregar y guardar un hallazgo.
-7. Abrir la vista previa y verificar identidad corporativa, orden modificado, hallazgo y contenido adicional.
-8. Regresar al historial y comprobar la presencia del informe y el hallazgo.
-9. Revisar directorio y equipos en contenedores de 390 y 768 píxeles: sin desbordamiento horizontal en las vistas examinadas.
+Son contenedores de tamaño adaptable en Chrome, no teléfonos o tablets físicos. La previsualización interna usa HTTP. La PWA offline completa debe verificarse en HTTPS publicado o localhost; su ciclo se probó de forma simulada. Los permisos de roles y el portal se probaron por la API; no se realizaron sesiones de navegador con credenciales reales ni pruebas con cámara/micrófono físicos.
 
-La revisión adaptable se realizó en Chrome, no en dispositivos físicos. La previsualización interna usa HTTP; la instalación PWA y el funcionamiento offline completo deben comprobarse en el HTTPS publicado o en localhost. El ciclo del service worker y la navegación sin red se verifican mediante pruebas simuladas.
+## Validación después de publicar en tu cuenta
 
-## Comprobaciones en tu nube después de actualizar
+1. Exportar respaldos locales y D1. Confirmar que 0003 se aplica sin cambiar el ID de D1 ni recrear el bucket.
+2. Confirmar v3.0.0 en todos los dispositivos y revisar los permisos de cuentas anteriores.
+3. Sincronizar computador ↔ teléfono con un cliente, equipo, plantilla avanzada, informe, fotos, PDF adjunto y tareas. Probar un conflicto de dos dispositivos.
+4. Abrir con internet, desconectar, volver a abrir y guardar un borrador con tabla y evidencia. Reconectar con la app abierta y comprobar la recuperación.
+5. Completar Borrador → En revisión → revisión técnica → Aprobado → Emitido con cuentas de los roles correspondientes. Probar devolución y nueva revisión.
+6. Entrar como cliente desde otro perfil: comprobar que solo ve sus emitidos, descarga anexos y registra comentarios. Verificar que otra cuenta de cliente no accede.
+7. Generar un PDF real con texto extenso, tabla, fotografías y firmas; revisar saltos, numeración y anexos separados.
+8. Probar QR por cámara, imagen y TAG; grabación y transcripción con permiso de micrófono en Android/iOS usados en terreno.
+9. Probar extracción de un PDF real, revisión y autorización del texto; evaluar citas y calidad de la IA con procedimientos propios.
+10. Compartir por WhatsApp y correo; realizar un envío desde Resend si está configurado. Verificar caducidad y revocación de enlaces.
+11. Descargar e importar respaldo en un perfil de prueba: comprobar informes, plantillas, tareas, órdenes, originales PDF, notas de voz y archivados.
+12. Comprobar una actualización con un borrador abierto; confirmar guardado y recuperación antes de continuar.
 
-1. Confirmar la migración 0002 sin cambiar el ID de D1 ni recrear los recursos.
-2. Verificar sincronización real computador ↔ teléfono de un cliente, instalación, equipo, plantilla e informe con fotografías.
-3. Producir un conflicto desde dos dispositivos y resolverlo conservando el resultado elegido.
-4. Abrir por HTTPS, desconectar internet, reabrir y guardar cambios; reconectar con la aplicación abierta y comprobar sincronización.
-5. Generar un PDF real con textos largos, hallazgos y fotografías; revisar saltos y numeración.
-6. Probar compartir por WhatsApp y correo en Android/iOS. Verificar un envío real si tienes correo configurado.
-7. Revisar que la IA mantenga los hechos registrados, incluidos los hallazgos.
-8. Comprobar una actualización con un borrador activo; cerrar los formularios de configuración antes de aplicarla.
-9. Descargar e importar un respaldo en un perfil de prueba; comprobar catálogos, plantillas, imágenes y registros archivados.
-
-La entrega prepara el código para tu repositorio. No acredita que esta versión esté desplegada o probada en tu cuenta de Cloudflare.
+Esta entrega contiene el código y las guías preparados para GitHub. No acredita un despliegue de esta versión ni una validación de esos servicios en la cuenta Cloudflare del usuario.

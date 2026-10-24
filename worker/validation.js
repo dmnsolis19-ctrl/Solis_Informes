@@ -1,3 +1,4 @@
+import {validateDesignerValues,designerMissing} from '../public/js/designer.js';
 import {normalizeCatalog,validateTemplateSnapshot} from '../public/js/catalogs.js';
 import {newReport,templates,validateReport,safeImage} from '../public/js/domain.js';
 export class HttpError extends Error{constructor(status,message,extra={}){super(message);this.status=status;this.extra=extra;}}
@@ -10,7 +11,7 @@ export function validateReportData(data){
  if(!data||typeof data!=='object'||!idValid(data.id)||!Object.hasOwn(templates,data.template))fail(400,'Informe inválido.');
  const base=newReport(data.template,null,data.folio),out={};
  for(const key of Object.keys(base))out[key]=data[key]??base[key];
- for(const key of ['id','folio','title','serviceDate','workOrder','technician','reviewer','customerCompany','customerName','customerEmail','customerPhone','customerId','customerRole','site','maintenanceType','objective','scope','exclusions','initialCondition','workPerformed','diagnosis','observations','recommendations','conclusions','materials','result','proposalTerms','proposalValidity','proposalDeadline','taxRate','customerRef','siteRef','equipmentRef','templateId'])text(out[key]);
+ for(const key of ['id','folio','title','serviceDate','workOrder','technician','reviewer','customerCompany','customerName','customerEmail','customerPhone','customerId','customerRole','site','maintenanceType','objective','scope','exclusions','initialCondition','workPerformed','diagnosis','observations','recommendations','conclusions','materials','result','proposalTerms','proposalValidity','proposalDeadline','taxRate','customerRef','siteRef','equipmentRef','templateId','createdBy','assignedTo','approvedBy','approvedAt','issuedBy','issuedAt','reviewedBy','reviewedAt'])text(out[key]);
  if(out.folio.length>150||out.title.length>500)fail(400,'Título o folio demasiado extenso.');
  if(!['Borrador','En revisión','Aprobado','Emitido'].includes(out.status)||!Number.isInteger(out.revision)||out.revision<0)fail(400,'Estado o revisión inválidos.');
  if(!idValid(out.companyId))fail(400,'Selecciona una empresa emisora.');
@@ -34,8 +35,13 @@ export function validateReportData(data){
  if(!Array.isArray(out.customSections)||out.customSections.length>20)fail(400,'Secciones adicionales inválidas.');
  out.customSections=out.customSections.map(s=>{if(!s||!idValid(s.id)||typeof s.required!=='boolean')fail(400,'Sección adicional inválida.');return {id:s.id,title:text(s.title,200),content:text(s.content),required:s.required};});
  if(out.templateSnapshot){const definitions=out.templateSnapshot.customSections;if(definitions.length!==out.customSections.length||definitions.some(d=>!out.customSections.some(s=>s.id===d.id&&s.title===d.title&&s.required===d.required)))fail(400,'Las secciones no corresponden a la plantilla del informe.');}
+ try{out.designerValues=validateDesignerValues(out);}catch(error){fail(400,error.message);}
+ if(out.derivedFrom!==null){const d=out.derivedFrom;if(!d||!idValid(d.id)||typeof d.folio!=='string'||!Number.isInteger(d.revision)||!['Aprobado','Emitido'].includes(d.status))fail(400,'Origen documental inválido.');out.derivedFrom={id:d.id,folio:text(d.folio,150),revision:d.revision,status:d.status};}
+ if(!Array.isArray(out.attachments)||out.attachments.length>4)fail(400,'Máximo cuatro anexos PDF.');out.attachments=out.attachments.map(a=>{if(!a||!idValid(a.id)||typeof a.name!=='string'||!(/^(data:application\/pdf;base64,[A-Za-z0-9+/=]+|\/api\/files\/[a-f0-9]{64})$/.test(a.dataUrl)))fail(400,'Anexo PDF inválido.');return {id:a.id,name:text(a.name,200),dataUrl:text(a.dataUrl,2800000)};});
+ if(!Array.isArray(out.sourceReferences)||out.sourceReferences.length>40)fail(400,'Máximo 40 referencias de consulta.');out.sourceReferences=out.sourceReferences.map(s=>{if(!s||!idValid(s.manualId))fail(400,'Referencia documental inválida.');const out={};for(const k of ['id','manualId','title','revision','source','excerpt'])out[k]=text(s[k]??'',k==='excerpt'?2200:1000);return out;});
+ out.schemaVersion=Number.isInteger(data.schemaVersion)?data.schemaVersion:3;
  out.legacyImported=data.legacyImported===true;
- if(out.status==='Emitido'&&!out.legacyImported){const errors=validateReport(out);if(errors.length)fail(422,'El documento no está completo: '+errors.join(', '));}
+ if(out.status==='Emitido'&&!out.legacyImported){const errors=[...validateReport(out),...designerMissing(out)];if(errors.length)fail(422,'El documento no está completo: '+errors.join(', '));}
  return out;
 }
 

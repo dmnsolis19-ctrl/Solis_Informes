@@ -1,3 +1,15 @@
+# 3.0.0 · Operación, revisión y conocimiento
+
+- Panel operativo, filtros, actividad técnica, tendencias y alertas configurables.
+- Diseñador de bloques, tablas, fotos, firmas, condiciones y versiones de plantilla.
+- Tareas independientes, órdenes y mantenimiento periódico derivado de documentos aprobados.
+- Roles y acceso por empresa, organizaciones independientes, portal por cliente y comentarios.
+- Revisión, aprobación y emisión verificadas por servidor, devolución motivada, auditoría e idempotencia.
+- QR local, notas de voz, transcripción revisable, documentos autorizados y consultas con fuentes.
+- PDF adjunto privado y disponible offline; descarga autorizada por cliente y caché de PDF emitido.
+- Migración 0003 preserva datos e historial; IndexedDB v4, respaldo de operaciones/voz y sincronización protocolo 4 ordenada por referencias.
+- Archivos privados protegidos por empresa, incluidos los utilizados para generar PDF.
+
 # 2.1.0 — 23 de octubre de 2026
 
 - Clientes, instalaciones y equipos por empresa; búsqueda, edición, archivado y restauración.

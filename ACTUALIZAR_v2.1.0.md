@@ -1,3 +1,5 @@
+> Documento histórico de la versión 2.1. Para esta entrega sigue `ACTUALIZAR_v3.0.0.md`.
+
 # Actualizar SOLIS Field Pro a 2.1.0
 
 Este paquete actualiza la aplicación que ya tienes en GitHub y Cloudflare. No crea una aplicación ni una base de datos nuevas.
@@ -5,7 +7,7 @@ Este paquete actualiza la aplicación que ya tienes en GitHub y Cloudflare. No c
 1. En la aplicación actual, descarga un respaldo desde «Descargar respaldo». Hazlo en cada dispositivo que conserve cambios sin sincronizar.
 2. Extrae este ZIP y copia su contenido en la raíz de tu repositorio `Solis_Informes`, reemplazando los archivos del proyecto. En GitHub deben seguir apareciendo `package.json`, `public/`, `worker/`, `scripts/` y `migrations/` directamente en la raíz.
 3. **Conserva tu `wrangler.jsonc` actual.** El ZIP no lo incluye para evitar reemplazar el nombre válido del Worker, el identificador D1 o las conexiones R2/AI/BROWSER que ya configuraste. `wrangler.example.jsonc` sirve únicamente para una instalación nueva; no sustituye tu archivo actual.
-   Al revisar tu repositorio, el campo `name` todavía aparece como `solis_informes`. Debe coincidir con el nombre válido del Worker que ya tienes publicado en Cloudflare, usando minúsculas, números y guiones. Si publicaste el Worker como `solis-informes`, cambia únicamente esa línea a `"name": "solis-informes"`. No cambies el ID de D1, los nombres de recursos ni los bindings.
+   El nombre válido confirmado para esta aplicación es `solis-informes`. Consérvalo junto con tu ID D1 y bindings.
 4. Sube también `migrations/0002_catalogs.sql`; conserva `0001_initial.sql` y todas las demás migraciones existentes. No borres ni recrees D1 o R2.
 5. Realiza el commit en la rama conectada a Cloudflare. Mantén estos comandos:
    - Compilación: `node scripts/ci.mjs`

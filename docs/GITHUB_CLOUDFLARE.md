@@ -1,4 +1,4 @@
-> Si ya tienes la aplicación publicada, utiliza primero `ACTUALIZAR_v2.1.0.md` y conserva tu `wrangler.jsonc`. Las instrucciones siguientes corresponden a una instalación nueva. En una instalación nueva, comienza copiando `wrangler.example.jsonc` como `wrangler.jsonc`.
+> Si ya tienes la aplicación publicada, utiliza primero `ACTUALIZAR_v3.0.0.md` y conserva tu `wrangler.jsonc`. Las instrucciones siguientes corresponden a una instalación nueva. En una instalación nueva, comienza copiando `wrangler.example.jsonc` como `wrangler.jsonc`.
 
 # Publicar desde GitHub en Cloudflare
 
@@ -35,7 +35,7 @@ No crees otra base si ya has realizado estos pasos. Si utilizas nombres distinto
 
 ## 3. Conectar GitHub a tu Worker
 
-Para conservar tu dirección actual, abre el Worker **solis-mantenimiento-grupos** en Cloudflare:
+Abre tu Worker actual **solis-informes** en Cloudflare (o el nombre válido que hayas elegido):
 
 1. Ve a **Settings → Builds → Connect** y conecta el repositorio GitHub.
 2. Selecciona la rama que usarás, normalmente `main`.
@@ -175,3 +175,7 @@ La aplicación no garantiza sincronización con el navegador cerrado ni trabajo 
 - https://developers.cloudflare.com/browser-run/quick-actions/pdf-endpoint/
 - https://developers.cloudflare.com/workers-ai/configuration/bindings/
 - https://resend.com/docs/api-reference/emails/send-email
+
+## Extensiones de la versión 3
+
+Consulta `docs/USO_V3.md` para configurar roles por empresa, portal de clientes, revisión y aprobación, biblioteca técnica, alertas y transcripción. Conserva las migraciones 0001, 0002 y 0003.

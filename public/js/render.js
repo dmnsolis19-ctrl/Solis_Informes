@@ -1,3 +1,4 @@
+import {renderDesigner} from './designer.js';
 import {sectionDefinitions} from './catalogs.js';
 import {templates,escapeHtml as e,safeImage,fmtDate,proposalTotals,money,nextService} from './domain.js';
 const lines=v=>e(v||'No registrado').replaceAll('\n','<br>');
@@ -14,7 +15,7 @@ export function renderReport(r){
  const signature=(label,image,name)=>`<div class="doc-signature"><h3>${e(label)}</h3>${safeImage(image)?`<img src="${safeImage(image)}" alt="Firma">`:'<div class="unsigned">Sin firma registrada</div>'}<strong>${e(name||'—')}</strong></div>`;
  const eq=r.equipment||{};const next=nextService(r);
  return `<article class="document" style="--doc-primary:${colour};--doc-accent:${accent}">
- <header class="doc-header"><div class="doc-company">${safeImage(c.logo)?`<img class="doc-logo" src="${safeImage(c.logo)}" alt="Logo de empresa">`:''}<div><strong>${e(c.name||'Empresa sin configurar')}</strong><span>${e([c.taxId,c.city,c.country].filter(Boolean).join(' · '))}</span><span>${e([c.email,c.phone,c.website].filter(Boolean).join(' · '))}</span></div></div><div class="doc-code">${e(t.code)}<br><b>REVISIÓN ${r.revision||0}</b></div></header>
+ <header class="doc-header"><div class="doc-company">${safeImage(c.logo)?`<img class="doc-logo" src="${safeImage(c.logo)}" alt="Logo de empresa">`:''}<div><strong>${e(c.name||'Empresa sin configurar')}</strong><span>${e([c.taxId,c.city,c.country].filter(Boolean).join(' · '))}</span><span>${e([c.email,c.phone,c.website].filter(Boolean).join(' · '))}</span></div></div><div class="doc-code">${e(r.templateSnapshot?.headerText||'')}<br>${e(t.code)}<br><b>REVISIÓN ${r.revision||0}</b></div></header>
  <div class="doc-heading"><span>${e(t.subtitle)}</span><h1>${e(r.title||t.title)}</h1><p>${e(r.folio)} <span> / </span> ${e(fmtDate(r.serviceDate))}</p></div>
  <div class="doc-status ${r.status==='Emitido'?'issued':''}">${r.status==='Emitido'?(r.legacyImported?'DOCUMENTO LEGADO · IMPORTADO':'DOCUMENTO EMITIDO'):e(r.status).toUpperCase()+' · DOCUMENTO DE TRABAJO'}<b>${e(r.result||'No evaluado')}</b></div>
  ${block('Identificación del servicio',cells([['Cliente',r.customerCompany],['Instalación',r.site],['OT / referencia',r.workOrder],['Intervención',r.maintenanceType],['Responsable',r.technician],['Revisor',r.reviewer],['Contacto',r.customerName],['Correo del cliente',r.customerEmail]]))}
@@ -28,9 +29,9 @@ export function renderReport(r){
  ${block('Conclusiones y recomendaciones',text('Conclusiones',r.conclusions)+text('Recomendaciones',r.recommendations))}
  ${r.actions?.length?block('Plan de acciones',table(['Acción','Prioridad','Responsable','Fecha objetivo','Estado'],r.actions.map(a=>row([a.description,a.priority,a.owner,fmtDate(a.dueDate),a.status])))):''}
  ${r.photos?.length?block('Registro de evidencias',`<div class="doc-photos">${r.photos.map((p,i)=>`<figure>${safeImage(p.dataUrl)?`<img src="${safeImage(p.dataUrl)}" alt="Evidencia ${i+1}">`:''}<figcaption><b>Figura ${i+1}. </b>${e(p.caption||'Sin descripción')}${p.tag?`<small>Referencia: ${e(p.tag)}</small>`:''}</figcaption></figure>`).join('')}</div>`):''}
- ${r.customSections?.some(s=>s.content?.trim())?block('Secciones adicionales',r.customSections.map(s=>text(s.title,s.content)).join('')):''}
+ ${(r.customSections?.some(s=>s.content?.trim())||renderDesigner(r))?block('Secciones adicionales',r.customSections.map(s=>text(s.title,s.content)).join('')+renderDesigner(r)):''}
  ${block('Responsables y recepción',`<div class="doc-signatures">${signature('ELABORADO POR',r.technicianSignature,r.technician)}${signature('RECEPCIÓN DEL CLIENTE',r.clientSignature,r.customerName)}</div><p class="doc-note">Las firmas registran la elaboración y recepción del documento. Las conclusiones se limitan al alcance y las evidencias descritas.</p>`)}
- ${layout()}
- <footer class="doc-footer"><div><b>${e(c.tradeName||c.name||'')}</b><span>${e(c.footer||c.address||'')}</span></div><span>${e(r.folio)} · Rev. ${r.revision||0}</span></footer></article>`;
+ ${r.derivedFrom?`<p class="doc-note">Documento de origen: ${e(r.derivedFrom.folio)} · Rev. ${r.derivedFrom.revision}</p>`:''}${layout()}${r.sourceReferences?.length?section('Referencias consultadas',r.sourceReferences.map(s=>`<div class="doc-text"><h3>${e(s.title)} · Rev. ${e(s.revision)}</h3><p>${e(s.source)}</p><p>${e(s.excerpt)}</p></div>`).join('')):''}${r.attachments?.length?section('Anexos',r.attachments.map(a=>`<p>${e(a.name)} · PDF adjunto disponible en la plataforma</p>`).join('')):''}
+ <footer class="doc-footer"><div><b>${e(c.tradeName||c.name||'')}</b><span>${e(r.templateSnapshot?.footerText||c.footer||c.address||'')}</span></div><span>${e(r.folio)} · Rev. ${r.revision||0}</span></footer></article>`;
 }
 export function renderDocument(r,css=''){return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(r.folio)} · ${e(r.title)}</title>${css?`<style>${css}</style>`:'<link rel="stylesheet" href="/print.css">'}</head><body>${renderReport(r)}</body></html>`;}
