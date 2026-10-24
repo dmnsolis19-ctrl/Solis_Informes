@@ -1,0 +1,6 @@
+import {escapeHtml as e,validateReport} from './domain.js';
+export function workflowSummary(report){
+ const position={'Borrador':0,'En revisión':1,'Aprobado':2,'Emitido':3}[report.status]??0,missing=validateReport(report).length;
+ const guidance=[missing?`${missing} puntos de contenido por completar antes de solicitar revisión.`:'Campos esenciales completos. Revisa el contenido antes de solicitar su revisión.','La revisión técnica y la aprobación se validan en el servidor.','El documento está aprobado. Revisa su versión antes de solicitar la emisión.','La versión emitida está bloqueada y disponible para entrega.'];
+ return `<section class="workflow-summary" aria-label="Recorrido documental"><ol class="workflow-steps">${['Preparar','Revisar','Aprobar','Entregar'].map((label,index)=>`<li class="${index<position?'complete':index===position?'current':''}" ${index===position?'aria-current="step"':''}><span>${index+1}</span>${label}</li>`).join('')}</ol><div class="workflow-guidance"><p>${e(guidance[position])}</p><button class="btn secondary small" data-action="${position===3?'share':'tab'}" ${position===3?'':'data-index="7"'}>${position===3?'Preparar entrega':'Ver revisión y siguiente paso'}</button></div></section>`;
+}

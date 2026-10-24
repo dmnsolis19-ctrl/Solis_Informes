@@ -1,3 +1,15 @@
+# Verificación actual: 3.4.0
+
+Consulta [REVISION_3.4.md](REVISION_3.4.md): 84 pruebas y compilación completa. La procedencia de la ampliación multiespecialidad y las comprobaciones reales pendientes se detallan allí.
+
+---
+
+# Verificación actual: 3.2.0
+
+Consulta [REVISION_3.2.md](REVISION_3.2.md) para los resultados de esta entrega: 72 pruebas y compilación completa. La comprobación visual y los servicios reales de Cloudflare siguen pendientes; el registro siguiente corresponde a la entrega histórica 3.0.0.
+
+---
+
 # Verificación de la entrega 3.0.0
 
 Fecha: 23 de octubre de 2026.

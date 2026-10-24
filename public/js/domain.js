@@ -1,3 +1,4 @@
+import {specialtyTemplates} from './specialties.js';
 import {designerMissing} from './designer.js';
 const generatorMeasurements = [
   { label: "Voltaje L1-N", unit: "V", value: "", reference: "" }, { label: "Voltaje L2-N", unit: "V", value: "", reference: "" },
@@ -44,6 +45,7 @@ Object.assign(templates, {
  failure: {label:'Análisis de falla',shortLabel:'Fallas',icon:'AF',prefix:'AF',code:'TEC-AF-001',title:'Análisis de falla',subtitle:'EVIDENCIAS Y CAUSAS',description:'Documenta la falla, las pruebas, las hipótesis y las acciones correctivas.',defaultService:'Análisis de falla',serviceOptions:['Análisis de falla','Causa probable','Análisis de recurrencia'],measurements:diagnosticMeasurements,checklist:diagnosticChecklist},
  commissioning: {label:'Pruebas y puesta en marcha',shortLabel:'Puesta en marcha',icon:'PM',prefix:'PM',code:'TEC-PM-001',title:'Pruebas y puesta en marcha',subtitle:'VERIFICACIÓN FUNCIONAL',description:'Registra verificaciones, pruebas, aceptación y pendientes de entrega.',defaultService:'Puesta en marcha',serviceOptions:['Puesta en marcha','Prueba funcional','SAT','FAT'],measurements:diagnosticMeasurements,checklist:['Documentación y planos verificados','Condiciones previas verificadas','Protecciones y seguridad verificadas','Pruebas funcionales ejecutadas','Resultados y pendientes registrados','Entrega al cliente realizada']}
 });
+Object.assign(templates,specialtyTemplates);
 export const templateOrder = Object.keys(templates);
 export const uid = () => crypto.randomUUID?.() || '10000000-1000-4000-8000-100000000000'.replace(/[018]/g,c=>(Number(c)^crypto.getRandomValues(new Uint8Array(1))[0]&15>>Number(c)/4).toString(16));
 export const localDate = (date=new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;

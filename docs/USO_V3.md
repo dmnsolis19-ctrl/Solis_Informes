@@ -1,3 +1,11 @@
+# Incorporaciones de 3.4.0
+
+En Plantillas, usa el buscador y filtro para elegir climatización, electricidad, automatización, fotovoltaica u otra base. Continúa creando plantillas propias para nuevos servicios; no se necesita modificar el código para adaptar bloques, mediciones, verificaciones y textos dentro de sus capacidades actuales.
+
+En el editor, el recorrido Preparar → Revisar → Aprobar → Entregar abre los controles existentes. Si aparece un aviso de edición simultánea, tu texto queda en Sincronización → Copias resguardadas y el informe muestra la versión que se guardó primero. Puedes recuperar la copia como otro informe; necesita revisión y firmas propias. Los respaldos incluyen estas copias.
+
+---
+
 # Uso de SOLIS Field Pro 3
 
 ## Empresa y documentos
