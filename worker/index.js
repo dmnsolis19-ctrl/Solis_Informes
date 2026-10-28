@@ -8,7 +8,7 @@ const baseHeaders={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'
 const json=(data,status=200,headers={})=>Response.json(data,{status,headers:{...baseHeaders,...headers}});
 const dto=row=>({id:row.id,kind:row.kind,version:row.version,deleted:!!row.deleted,data:JSON.parse(row.data)});
 async function entity(env,user,kind,id){return env.DB.prepare('SELECT * FROM entities WHERE workspace_id=? AND kind=? AND id=?').bind(user.workspaceId,kind,id).first();}
-function originCheck(req){const origin=req.headers.get('Origin');if(origin&&origin!==new URL(req.url).origin)fail(403,'Origen no autorizado.');if(req.method!=='GET'&&req.method!=='HEAD'&&!['2','3','4'].includes(req.headers.get('X-Solis-Client')))fail(403,'Solicitud no autorizada.');}
+function originCheck(req){const origin=req.headers.get('Origin');if(origin&&origin!==new URL(req.url).origin)fail(403,'Origen no autorizado.');if(req.method!=='GET'&&req.method!=='HEAD'&&!['2','3','4','5'].includes(req.headers.get('X-Solis-Client')))fail(403,'Solicitud no autorizada.');}
 function encode64(bytes){let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(text);}
 function imageType(bytes){if(bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47)return 'image/png';if(bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff)return 'image/jpeg';if(new TextDecoder().decode(bytes.subarray(0,4))==='RIFF'&&new TextDecoder().decode(bytes.subarray(8,12))==='WEBP')return 'image/webp';return null;}
 async function externalize(value,env,workspaceId,companyId='',user=null){
@@ -36,7 +36,7 @@ async function route(req,env,ctx){
  if(path.startsWith('/s/'))return publicShare(req,env,url);
  if(!path.startsWith('/api/')){const asset=await env.ASSETS.fetch(req);const headers=new Headers(asset.headers);headers.set('X-Content-Type-Options','nosniff');headers.set('Referrer-Policy','no-referrer');headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");if(path==='/sw.js'||path==='/'||path.endsWith('.html'))headers.set('Cache-Control','no-cache');return new Response(asset.body,{status:asset.status,headers});}
  originCheck(req);
- if(path==='/api/status'&&req.method==='GET'){const user=await getUser(req,env);return json({version:'3.4.0',configured:!!env.DB&&!!env.BUCKET,user,capabilities:{ai:!!env.AI,pdf:!!env.BROWSER,email:!!env.RESEND_API_KEY&&!!env.EMAIL_FROM,transcription:!!env.AI,portal:true,workflow:true}});}
+ if(path==='/api/status'&&req.method==='GET'){const user=await getUser(req,env);return json({version:'3.5.0',configured:!!env.DB&&!!env.BUCKET,user,capabilities:{ai:!!env.AI,pdf:!!env.BROWSER,email:!!env.RESEND_API_KEY&&!!env.EMAIL_FROM,transcription:!!env.AI,portal:true,workflow:true}});}
  if(!env.DB||!env.BUCKET)fail(503,'Configura las conexiones DB y BUCKET en Cloudflare. El modo local sigue disponible.');
  if(['/api/setup','/api/login'].includes(path)&&req.method==='POST'){
   const b=await jsonBody(req,5000),email=String(b.email||'').trim().toLowerCase(),password=String(b.password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254||password.length>128)fail(400,'Correo o contraseña inválidos.');
@@ -63,6 +63,7 @@ async function route(req,env,ctx){
   if(current&&b.kind==='reports'&&JSON.parse(current.data).status==='Emitido')fail(423,'La versión emitida está bloqueada. Crea una revisión.');
   if(current&&Number(req.headers.get('X-Solis-Client')||2)<3){const old=JSON.parse(current.data);if(old.templateSnapshot||old.customerRef||old.siteRef||old.equipmentRef||old.findings?.length||old.customSections?.length||old.assets?.some(a=>a.equipmentId))fail(426,'Actualiza la aplicación antes de editar este registro.');}
   if(current&&JSON.parse(current.data).schemaVersion>=4&&Number(req.headers.get('X-Solis-Client')||2)<4)fail(426,'Actualiza a SOLIS Field Pro 3 antes de editar este documento.');
+  if(current&&Number(req.headers.get('X-Solis-Client')||2)<5){const old=JSON.parse(current.data);if(old.documentLayout||old.templateSnapshot?.documentLayout)fail(426,'Actualiza a SOLIS Field Pro 3.5 para conservar la estructura personalizada.');}
   const data=b.kind==='reports'?validateReportData(b.data):b.kind==='companies'?validateCompany(b.data):validateCatalog(b.kind,b.data);if(data.id!==b.id)fail(400,'Identificador inconsistente.');assertWrite(user,b.kind,data,current,b.deleted);if(b.kind==='reports'&&data.derivedFrom){const source=await entity(env,user,'reports',data.derivedFrom.id);if(!source||source.deleted||JSON.parse(source.data).companyId!==data.companyId||!['Aprobado','Emitido'].includes(JSON.parse(source.data).status))fail(400,'Documento de origen no disponible o sin aprobar.');}
   if(catalogKinds.includes(b.kind)){
    if(current&&JSON.parse(current.data).companyId!==data.companyId)fail(400,'La empresa del catálogo no se puede cambiar.');

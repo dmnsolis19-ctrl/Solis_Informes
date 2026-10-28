@@ -1,3 +1,4 @@
+import {validateLayout} from '../public/js/document-layout.js';
 import {validateDesignerValues,designerMissing} from '../public/js/designer.js';
 import {normalizeCatalog,validateTemplateSnapshot} from '../public/js/catalogs.js';
 import {newReport,templates,validateReport,safeImage} from '../public/js/domain.js';
@@ -16,6 +17,7 @@ export function validateReportData(data){
  if(!['Borrador','En revisión','Aprobado','Emitido'].includes(out.status)||!Number.isInteger(out.revision)||out.revision<0)fail(400,'Estado o revisión inválidos.');
  if(!idValid(out.companyId))fail(400,'Selecciona una empresa emisora.');
  out.companySnapshot=validateCompany(out.companySnapshot);
+ try{out.documentLayout=validateLayout(out.documentLayout);}catch(error){fail(400,error.message);}
  for(const [key,max,fields]of [['measurements',200,['id','label','value','unit','reference']],['checklist',300,['id','label','condition','notes']],['photos',24,['id','dataUrl','caption','tag']],['assets',150,['id','tag','name','model','serial','notes','equipmentId']],['actions',150,['id','description','priority','owner','dueDate','status']],['proposalItems',300,['id','description','quantity','unit','price']],['history',2000,['at','action','by']]]){
   if(!Array.isArray(out[key])||out[key].length>max)fail(400,`Cantidad de elementos inválida: ${key}.`);
   out[key]=out[key].map(item=>{if(!item||typeof item!=='object')fail(400,'Elemento inválido.');const copy={};for(const k of fields)copy[k]=text(item[k]??'',k==='dataUrl'?1000000:10000);return copy;});

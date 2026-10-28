@@ -87,3 +87,16 @@ Crea un usuario Cliente vinculado a su ficha y empresa. Al entrar verá sus info
 Los informes admiten hasta cuatro anexos PDF de 2 MB cada uno. Se conservan en el dispositivo y en R2 privado al sincronizar. Se enumeran como anexos; no se fusionan automáticamente como páginas del PDF del informe. El cliente los descarga por separado desde el portal.
 
 PDF directo necesita BROWSER. El PDF emitido se reutiliza desde R2 privado según el contenido renderizado. «Imprimir / Guardar como PDF» funciona con los recursos locales preparados. Los enlaces de entrega duran siete días y se pueden revocar. WhatsApp abre el mensaje o el menú de compartir para que confirmes el envío. Resend requiere remitente y credenciales configurados; el correo entrega un enlace, sin envío automático de todos los anexos. No hay integración desatendida con WhatsApp Business.
+
+
+## Estructura avanzada, productividad y apariencia · 3.5
+
+En un borrador, **Estructura del informe** permite ajustar el orden, los títulos, las secciones opcionales, el espaciado, las fotografías por fila y el encabezado/pie. Agrega secciones propias de párrafos/listas y solicita saltos de página. Los formatos Técnico, Ejecutivo e Inspección conservan el contenido al reorganizarlo. Aplica los cambios para guardarlos; cancelar descarta lo no aplicado. En emitidos se necesita una revisión.
+
+«Reutilizar como plantilla de empresa» crea una plantilla nueva, independiente y con las secciones propias vacías. Conserva las definiciones de mediciones/verificaciones y los bloques/requisitos del origen, sin copiar datos del servicio. Se requieren permisos de administrador/supervisor para sincronizar plantillas.
+
+En Plantillas, marca ★ para favoritas y usa el filtro. Las favoritas se guardan por empresa en ese dispositivo. La lupa o Ctrl/⌘+K abre el buscador de secciones e informes recientes. Ctrl/⌘+S guarda el borrador o aplica el formulario de estructura si está abierto.
+
+El selector Claro/Oscuro/Dispositivo se encuentra en la barra superior y también en el portal del cliente. Su preferencia pertenece al navegador; el PDF mantiene el fondo de papel y la identidad de la empresa.
+
+Recorrido de actualización y límites: `ACTUALIZAR_v3.5.0.md`.

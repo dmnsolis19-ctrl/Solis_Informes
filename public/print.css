@@ -2,3 +2,6 @@
 
 .doc-finding{margin:14px 0;padding:12px;border:1px solid #dbe4e7;border-left:3px solid var(--doc-accent);break-inside:auto}.doc-finding>h3{margin-top:0;color:var(--doc-primary);break-after:avoid}.doc-finding .doc-facts{margin-bottom:10px}
 .designer-photo{width:100%;max-height:65mm;object-fit:contain}.designer-signature{max-width:65mm;height:24mm;object-fit:contain}.doc-text table{margin-top:12px}
+/* Per-document presentation, retained in PDFs and standalone previews. */
+.document.doc-compact .doc-section{margin-top:16px}.document.doc-compact .doc-text{margin-top:10px}.document.doc-compact td,.document.doc-compact th{padding:6px}.document.doc-photos-single .doc-photos{grid-template-columns:1fr}.document.doc-photos-single .doc-photos img{height:280px}.doc-page-break{break-before:page;page-break-before:always}
+@media print{.document.doc-compact .doc-section{margin-top:4mm}.document.doc-photos-single .doc-photos img{height:75mm}}

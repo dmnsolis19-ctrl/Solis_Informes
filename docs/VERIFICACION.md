@@ -1,3 +1,9 @@
+# Verificación actual: 3.5.0
+
+Consulta [REVISION_3.5.md](REVISION_3.5.md): 95 pruebas superadas, base exacta 3.4.0 proporcionada y recorridos locales del editor avanzado, reutilización, favoritos, búsqueda y apariencia. Incluye el alcance de validación pendiente en tu nube.
+
+---
+
 # Verificación actual: 3.4.0
 
 Consulta [REVISION_3.4.md](REVISION_3.4.md): 84 pruebas y compilación completa. La procedencia de la ampliación multiespecialidad y las comprobaciones reales pendientes se detallan allí.

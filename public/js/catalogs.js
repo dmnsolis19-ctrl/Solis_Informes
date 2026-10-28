@@ -1,10 +1,11 @@
+import {sectionDefinitions,validateLayout} from './document-layout.js';
 import {operationKinds,operationFields,newOperation,normalizeOperation} from './operations.js';
 import {validateDesigner} from './designer.js';
 import {uid,templates,newReport} from './domain.js';
 
 export const catalogKinds=['customers','sites','equipment','reportTemplates',...operationKinds];
 export const entityKinds=['companies',...catalogKinds,'reports'];
-export const sectionDefinitions={service:'Identificación del servicio',scope:'Objetivo y alcance',equipment:'Equipos y sistemas',measurements:'Mediciones y pruebas',inspection:'Inspección y verificaciones',development:'Desarrollo y resultados',findings:'Hallazgos',proposal:'Propuesta económica',conclusions:'Conclusiones y recomendaciones',actions:'Plan de acciones',photos:'Registro de evidencias',custom:'Secciones adicionales',signatures:'Responsables y recepción'};
+export {sectionDefinitions} from './document-layout.js';
 export const requiredFields={workOrder:'OT / referencia',reviewer:'Revisor',customerEmail:'Correo del cliente',diagnosis:'Diagnóstico',recommendations:'Recomendaciones',initialCondition:'Condición inicial',materials:'Materiales',exclusions:'Exclusiones'};
 export const catalogFields={
  ...operationFields,
@@ -17,7 +18,7 @@ const validId=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(v);
 export function newCatalog(kind,companyId){if(operationKinds.includes(kind))return newOperation(kind,companyId);if(!catalogKinds.includes(kind))throw new Error('Catálogo desconocido.');const now=new Date().toISOString();const row={id:uid(),companyId,createdAt:now,updatedAt:now,...Object.fromEntries(Object.keys(catalogFields[kind]).map(k=>[k,'']))};if(kind==='reportTemplates')Object.assign(row,{baseTemplate:'general',sectionOrder:Object.keys(sectionDefinitions),requiredFields:[],customSections:[],blocks:[],version:1,headerText:'',footerText:''});return row;}
 export function validateTemplateSnapshot(value){
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Formato de plantilla inválido.');
- const out={version:Number.isInteger(value.version)&&value.version>0?value.version:1,blocks:validateDesigner(value.blocks||[]),headerText:String(value.headerText||'').slice(0,1000),footerText:String(value.footerText||'').slice(0,2000)};for(const k of ['id','name','title','code','subtitle']){if(typeof value[k]!=='string'||value[k].length>500)throw new Error('Identidad de plantilla inválida.');out[k]=value[k];}
+ const out={documentLayout:validateLayout(value.documentLayout),version:Number.isInteger(value.version)&&value.version>0?value.version:1,blocks:validateDesigner(value.blocks||[]),headerText:String(value.headerText||'').slice(0,1000),footerText:String(value.footerText||'').slice(0,2000)};for(const k of ['id','name','title','code','subtitle']){if(typeof value[k]!=='string'||value[k].length>500)throw new Error('Identidad de plantilla inválida.');out[k]=value[k];}
  if(!validId(out.id)||!out.name.trim())throw new Error('Identidad de plantilla inválida.');
  if(!Array.isArray(value.sectionOrder)||value.sectionOrder.length!==Object.keys(sectionDefinitions).length||new Set(value.sectionOrder).size!==value.sectionOrder.length||value.sectionOrder.some(k=>!Object.hasOwn(sectionDefinitions,k)))throw new Error('Orden de secciones inválido.');
  if(!Array.isArray(value.requiredFields)||value.requiredFields.length>Object.keys(requiredFields).length||value.requiredFields.some(k=>!Object.hasOwn(requiredFields,k)))throw new Error('Campos obligatorios inválidos.');
@@ -47,7 +48,7 @@ export function normalizeCatalog(kind,input){
 }
 export function createFromTemplate(record,company,folio){
  const t=normalizeCatalog('reportTemplates',record),r=newReport(t.baseTemplate,company,folio);
- r.templateId=t.id;r.templateSnapshot=validateTemplateSnapshot(t);r.title=t.title;r.objective=t.objective;r.scope=t.scope;
+ r.documentLayout=validateLayout(t.documentLayout);r.templateId=t.id;r.templateSnapshot=validateTemplateSnapshot(t);r.title=t.title;r.objective=t.objective;r.scope=t.scope;
  r.designerValues=Object.fromEntries(t.blocks.map(b=>[b.id,b.type==='table'?[]:'']));r.customSections=t.customSections.map(s=>({...s,content:''}));
  if(t.checklistText.trim())r.checklist=t.checklistText.split('\n').filter(s=>s.trim()).map(label=>({id:uid(),label:label.trim(),condition:'',notes:''}));
  if(t.measurementsText.trim())r.measurements=t.measurementsText.split('\n').filter(s=>s.trim()).map(line=>{const [label='',unit='',reference='']=line.split('|').map(s=>s.trim());return {id:uid(),label,unit,reference,value:''};});
