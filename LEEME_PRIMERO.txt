@@ -1,13 +1,18 @@
-SOLIS Field Pro 3.4.0
+SOLIS FIELD PRO 3.5.0
 
-Lee ACTUALIZAR_v3.4.0.md antes de actualizar.
-La procedencia, cambios y validación están en docs/REVISION_3.4.md.
+Base: ZIP 3.4.0 proporcionado por el usuario.
+Incluye estructura personalizada de informes, formatos reutilizables,
+favoritos, buscador rápido, atajos y modo oscuro.
 
-Incluye el proyecto completo. Conserva tu wrangler.jsonc, D1, R2, bindings y secretos.
-No requiere migraciones nuevas desde 3.2.0 o la 3.3.0 descrita.
+1. Descarga un respaldo de la aplicación actual.
+2. Sigue ACTUALIZAR_v3.5.0.md.
+3. Copia el contenido del ZIP a la raíz de tu repositorio.
+4. Conserva tu wrangler.jsonc, D1, R2, bindings y secretos.
+5. No hay migraciones nuevas; conserva 0001, 0002 y 0003.
+6. Build: node scripts/ci.mjs
+   Deploy: node scripts/deploy.mjs
+7. Comprueba Field Pro v3.5.0 y actualiza todos los dispositivos.
 
-Comprobación: npm run ci (Node.js 24 recomendado).
-Inicio local: npm run dev.
-
-Copias resguardadas: Sincronización -> Copias resguardadas.
-Bases por especialidad: Plantillas -> buscador y filtro.
+Personalizar: abre un borrador -> Estructura del informe.
+Guía: ACTUALIZAR_v3.5.0.md
+Validación: docs/REVISION_3.5.md

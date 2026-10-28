@@ -1,12 +1,23 @@
-# SOLIS Field Pro 3.4.0
+# SOLIS Field Pro 3.5.0
 
 Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, propuestas y seguimiento de intervenciones. Conserva el trabajo local y sincroniza con Cloudflare al recuperar conexión, con la aplicación abierta.
 
-**Si ya está publicada, empieza por [ACTUALIZAR_v3.4.0.md](ACTUALIZAR_v3.4.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
+**Si ya está publicada, empieza por [ACTUALIZAR_v3.5.0.md](ACTUALIZAR_v3.5.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
 
 Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
 
-## Novedades 3.4.0
+## Novedades 3.5.0
+
+- Estructura independiente por informe: orden, títulos, visibilidad opcional, saltos de página y hasta 20 secciones propias con párrafos o listas.
+- Formatos rápidos Técnico, Ejecutivo e Inspección; espaciado normal/compacto, una/dos fotos por fila y textos de encabezado/pie.
+- Guardar estructura como plantilla nueva de la empresa, conservando bloques y requisitos de origen, sin copiar datos del cliente ni el texto de las secciones propias.
+- Plantillas favoritas por empresa y dispositivo, filtro de favoritas y buscador rápido de secciones e informes recientes.
+- Atajos Ctrl/⌘+K para buscar y Ctrl/⌘+S para guardar; controles visibles equivalentes.
+- Modo Claro, Oscuro o Dispositivo con preferencia conservada; el documento exportado mantiene su fondo de papel.
+
+Base exacta: ZIP 3.4.0 proporcionado por el usuario. Se mantienen las trece bases, copias resguardadas y mejoras de sincronización. Consulta [docs/REVISION_3.5.md](docs/REVISION_3.5.md).
+
+## Funciones conservadas de 3.4.0
 
 - Bases de climatización, electricidad, automatización industrial y fotovoltaica; se conservan instrumentación, puesta en marcha, diagnósticos, fallas y servicios generales.
 - Buscador por servicio y filtro por especialidad, conservando las plantillas propias para futuros trabajos.

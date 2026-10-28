@@ -1,3 +1,15 @@
+# 3.5.0 · Estructura personalizada y productividad · 28 de octubre de 2026
+
+- Actualización sobre el ZIP 3.4.0 entregado por el usuario; conserva sus trece bases, copias resguardadas, recuperación y control de guardados entre pestañas.
+- Estructura de documento guardada en cada informe: títulos, orden, secciones opcionales, saltos y hasta 20 secciones propias de párrafos o listas.
+- Formatos de orden Técnico, Ejecutivo e Inspección; espaciado y presentación de fotos, encabezado y pie.
+- Plantillas nuevas reutilizables desde la estructura, sin arrastrar contenido ni resultados del informe de origen.
+- Favoritos por empresa/dispositivo, búsqueda rápida con informes recientes de la empresa activa y atajos de navegación/guardado.
+- Apariencia Claro/Oscuro/Dispositivo en interfaz y portal; impresión independiente.
+- Validación compartida de estructuras, escape de texto, conservación en respaldos/revisiones y protección de escrituras antiguas que perderían el diseño.
+- Se conservan IndexedDB v4, migraciones D1 0001–0003 y protocolo de lectura 4. El cliente declara capacidad de escritura 5 para proteger las estructuras nuevas.
+- 95 pruebas automáticas superadas y revisión local de interfaz; servicios reales pendientes de comprobación en la nube del usuario.
+
 # 3.4.0 · Borradores protegidos y servicios multiespecialidad · 24 de octubre de 2026
 
 - Recuperación de las cuatro bases multiespecialidad descritas para 3.3.0 sobre el código verificado de 3.2.0. El ZIP 3.3.0 no estuvo disponible para comparación literal.
