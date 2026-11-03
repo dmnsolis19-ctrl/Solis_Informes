@@ -1,18 +1,18 @@
 # Verificación actual: 3.5.0
 
-Consulta [REVISION_3.5.md](REVISION_3.5.md): 95 pruebas superadas, base exacta 3.4.0 proporcionada y recorridos locales del editor avanzado, reutilización, favoritos, búsqueda y apariencia. Incluye el alcance de validación pendiente en tu nube.
+Consulta [REVISION_3.5.md](releases/REVISION_3.5.md): 95 pruebas superadas, base exacta 3.4.0 proporcionada y recorridos locales del editor avanzado, reutilización, favoritos, búsqueda y apariencia. Incluye el alcance de validación pendiente en tu nube.
 
 ---
 
 # Verificación actual: 3.4.0
 
-Consulta [REVISION_3.4.md](REVISION_3.4.md): 84 pruebas y compilación completa. La procedencia de la ampliación multiespecialidad y las comprobaciones reales pendientes se detallan allí.
+Consulta [REVISION_3.4.md](releases/REVISION_3.4.md): 84 pruebas y compilación completa. La procedencia de la ampliación multiespecialidad y las comprobaciones reales pendientes se detallan allí.
 
 ---
 
 # Verificación actual: 3.2.0
 
-Consulta [REVISION_3.2.md](REVISION_3.2.md) para los resultados de esta entrega: 72 pruebas y compilación completa. La comprobación visual y los servicios reales de Cloudflare siguen pendientes; el registro siguiente corresponde a la entrega histórica 3.0.0.
+Consulta [REVISION_3.2.md](releases/REVISION_3.2.md) para los resultados de esta entrega: 72 pruebas y compilación completa. La comprobación visual y los servicios reales de Cloudflare siguen pendientes; el registro siguiente corresponde a la entrega histórica 3.0.0.
 
 ---
 

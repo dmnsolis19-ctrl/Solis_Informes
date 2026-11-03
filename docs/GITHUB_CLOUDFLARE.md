@@ -1,4 +1,4 @@
-> Si ya tienes la aplicación publicada, utiliza primero `ACTUALIZAR_v3.0.0.md` y conserva tu `wrangler.jsonc`. Las instrucciones siguientes corresponden a una instalación nueva. En una instalación nueva, comienza copiando `wrangler.example.jsonc` como `wrangler.jsonc`.
+> Si ya tienes la aplicación publicada, utiliza primero `docs/releases/ACTUALIZAR_v3.0.0.md` y conserva tu `wrangler.jsonc`. Las instrucciones siguientes corresponden a una instalación nueva. En una instalación nueva, comienza copiando `wrangler.example.jsonc` como `wrangler.jsonc`.
 
 # Publicar desde GitHub en Cloudflare
 

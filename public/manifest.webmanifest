@@ -1,1 +1,70 @@
-{"id":"/","name":"SOLIS Field · Informes profesionales","short_name":"SOLIS Field","start_url":"/","scope":"/","display":"standalone","background_color":"#f5f6f8","theme_color":"#102f40","icons":[{"src":"/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+  "id": "/",
+  "name": "SOLIS Field · Informes profesionales",
+  "short_name": "SOLIS Field",
+  "description": "Crea, revisa y comparte informes técnicos profesionales, incluso sin conexión.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#f5f6f8",
+  "theme_color": "#102f40",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/panel-escritorio.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Panel de operaciones"
+    },
+    {
+      "src": "/screenshots/panel-movil.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Panel de operaciones en el teléfono"
+    }
+  ]
+}

@@ -6,4 +6,6 @@ if(typeof config.name!=='string'||!/^[a-z0-9-]+$/.test(config.name)){console.err
 if(config.d1_databases?.some(d=>!d.database_id||d.database_id.includes('REEMPLAZAR'))){console.error('Primero crea D1 y reemplaza database_id en wrangler.jsonc. Consulta docs/GITHUB_CLOUDFLARE.md.');process.exit(1);}
 const database=config.d1_databases?.find(d=>d.binding==='DB')?.database_name;if(!database){console.error('Falta el binding D1 DB en wrangler.jsonc.');process.exit(1);}
 const npx=process.platform==='win32'?'npx.cmd':'npx';
+// Regenera sw.js y el hash de caché antes de publicar; sin esto los equipos instalados pueden conservar archivos antiguos.
+const build=spawnSync(process.execPath,['scripts/build.mjs'],{stdio:'inherit'});if(build.status!==0){console.error('El build falló. No se publicó nada.');process.exit(build.status||1);}
 for(const args of [['wrangler@4.92.0','d1','migrations','apply',database,'--remote'],['wrangler@4.92.0','deploy']]){const result=spawnSync(npx,args,{stdio:'inherit',shell:process.platform==='win32'});if(result.status!==0)process.exit(result.status||1);}
