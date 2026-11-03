@@ -1,10 +1,20 @@
-# SOLIS Field Pro 3.5.1
+# SOLIS Field Pro 3.6.0
 
 Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, propuestas y seguimiento de intervenciones. Conserva el trabajo local y sincroniza con Cloudflare al recuperar conexión, con la aplicación abierta.
 
-**Si ya está publicada, empieza por [ACTUALIZAR_v3.5.0.md](ACTUALIZAR_v3.5.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
+**Si ya está publicada, empieza por [ACTUALIZAR_v3.6.0.md](ACTUALIZAR_v3.6.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
 
 Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
+
+## Novedades 3.6.0
+
+- **Plantillas nuevas (18 en total):** FAT y SAT de PLC/SCADA, planta de tratamiento de agua (PTAP), almacenamiento con baterías y gestión de energía, y tableros con termografía. Lecturas y criterios de aceptación siguen vacíos: los define el responsable.
+- **Gráficos en el documento:** tendencias de un parámetro del equipo entre visitas e importación de CSV (SOLIS Energy, Node-RED, registradores) con zona horaria, energía integrada en kWh y reducción de series largas. Aparecen en «Mediciones y pruebas», en pantalla y en el PDF.
+- **Verificación pública:** al emitir se calcula una huella SHA-256; el documento lleva un QR hacia `/v/<código>`, que indica si está vigente, reemplazado o alterado sin mostrar su contenido. La firma del cliente guarda su fecha y hora.
+- **Avisos y respaldos diarios:** resumen de pendientes por correo, respaldo de datos a R2 (con destino aparte opcional) y limpieza de enlaces caducados.
+- **Fotografías y dictado:** hora y ubicación opcionales por fotografía y dictado por voz en los campos de texto.
+- **Seguridad:** verificación en dos pasos (TOTP) con códigos de recuperación, registro de errores de los dispositivos y modelo de IA Llama 3.3 70B por defecto.
+- **Calidad:** servidor dividido en módulos, pruebas de navegador (`npm run e2e`) y 100+ pruebas automáticas.
 
 ## Novedades 3.5.1
 
@@ -91,10 +101,11 @@ Las pruebas usan SQLite real mediante un adaptador D1, R2 en memoria y dobles pa
 | Carpeta | Contenido |
 |---|---|
 | `public/` | Interfaz, reglas de dominio, IndexedDB y service worker |
-| `worker/` | API, sesiones, permisos, sincronización y servicios |
-| `migrations/` | Migraciones D1 0001, 0002 y 0003; historial y auditoría |
+| `worker/` | API por módulos (sincronización, documentos, seguridad, verificación, tareas diarias), sesiones y permisos |
+| `migrations/` | Migraciones D1 0001 a 0004; historial, auditoría, verificación y seguridad |
 | `scripts/` | Servidor local, CI, caché y despliegue |
 | `tests/` | Dominio, migración, API, permisos, sincronización y offline |
+| `e2e/` | Pruebas de navegador con Playwright (`npm run e2e`) |
 | `docs/` | Instalación, uso y verificación; `docs/releases/` conserva las guías históricas |
 | `.github/` | Integración continua |
 

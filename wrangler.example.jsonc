@@ -28,8 +28,10 @@
   "browser": {
     "binding": "BROWSER"
   },
+  // Opcionales (3.6): APP_URL, TIMEZONE, DIGEST_ENABLED, BACKUP_KEEP_DAYS. Secreto recomendado: APP_SECRET.
+  // Enlace R2 opcional para respaldos: { "binding": "BACKUP_BUCKET", "bucket_name": "solis-field-backups" } dentro de r2_buckets.
   "vars": {
-    "AI_MODEL": "@cf/meta/llama-3.1-8b-instruct",
+    "AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     "AI_DAILY_LIMIT": "30",
     "APP_NAME": "SOLIS Field"
   },
@@ -38,7 +40,7 @@
   },
   "triggers": {
     "crons": [
-      "0 4 * * *"
+      "0 11 * * *"
     ]
   }
 }

@@ -1,3 +1,17 @@
+# 3.6.0 · Gráficos, verificación y seguridad · 3 de noviembre de 2026
+
+- Cinco plantillas nuevas (18 en total): `plcFat`, `plcSat`, `waterPlant`, `bess` y `switchboard`; grupo «Agua y procesos». Sin lecturas ni límites inventados.
+- Gráficos de línea en SVG (`public/js/charts.js`) guardados en el informe (`charts`, hasta 12 con 400 puntos), con zona horaria, resumen estadístico y reducción LTTB. Origen: historial del equipo o CSV importado (`energy-import.js`: separadores, coma decimal, formatos de fecha, fecha y hora separadas, energía integrada en kWh).
+- Verificación pública: migración 0004 (`document_integrity`), huella SHA-256 canónica calculada por el servidor al emitir (`integrity`), página `/v/<código>` sin contenido del informe, QR en el documento y fecha de firma del cliente (`clientSignedAt`).
+- Tarea diaria (`worker/scheduled.js`, 11:00 UTC): limpieza de sesiones y de copias de enlaces caducados hace más de 30 días, respaldo JSON por espacio en R2 (o `BACKUP_BUCKET`, 14 días) y resumen de pendientes por correo (Resend) una vez al día por usuario.
+- Fotografías con hora y ubicación opcionales (`takenAt`, `geo`) y dictado por voz con el reconocimiento del navegador.
+- Verificación en dos pasos TOTP (RFC 6238) con secreto cifrado (AES-GCM), ventana de ±30 s, sin reutilizar códigos, 8 códigos de recuperación y límite de intentos. Registro de errores de los dispositivos (`/api/client-errors`).
+- Modelo de IA por defecto `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (configurable con `AI_MODEL`) y contexto acotado a 36.000 caracteres.
+- `worker/index.js` dividido en `http`, `files`, `documents`, `sync-routes`, `ai`, `security`, `integrity`, `totp` y `scheduled`.
+- El cliente declara capacidad de escritura 6; el servidor rechaza (426) ediciones de clientes anteriores sobre registros con gráficos, fecha de firma o datos de fotografía.
+- Pruebas de navegador `e2e/` (sin conexión, importación y vista previa, doble factor, plantillas). 136 pruebas automáticas y 4 pruebas de navegador superadas.
+- `[hidden]` ya oculta elementos con estilos propios; la política de permisos admite ubicación del mismo origen.
+
 # 3.5.1 · Despliegue seguro, endurecimiento y PWA · 2 de noviembre de 2026
 
 - `scripts/deploy.mjs` ejecuta el build antes de publicar; `scripts/build.mjs` excluye las capturas del precaché y funciona con rutas de Windows.

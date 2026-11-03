@@ -1,4 +1,6 @@
 import {validateLayout} from '../public/js/document-layout.js';
+import {normalizeCharts} from '../public/js/charts.js';
+import {validTakenAt,validGeo} from '../public/js/photo-meta.js';
 import {validateDesignerValues,designerMissing} from '../public/js/designer.js';
 import {normalizeCatalog,validateTemplateSnapshot} from '../public/js/catalogs.js';
 import {newReport,templates,validateReport,safeImage} from '../public/js/domain.js';
@@ -18,12 +20,15 @@ export function validateReportData(data){
  if(!idValid(out.companyId))fail(400,'Selecciona una empresa emisora.');
  out.companySnapshot=validateCompany(out.companySnapshot);
  try{out.documentLayout=validateLayout(out.documentLayout);}catch(error){fail(400,error.message);}
- for(const [key,max,fields]of [['measurements',200,['id','label','value','unit','reference']],['checklist',300,['id','label','condition','notes']],['photos',24,['id','dataUrl','caption','tag']],['assets',150,['id','tag','name','model','serial','notes','equipmentId']],['actions',150,['id','description','priority','owner','dueDate','status']],['proposalItems',300,['id','description','quantity','unit','price']],['history',2000,['at','action','by']]]){
+ try{out.charts=normalizeCharts(out.charts);}catch(error){fail(400,error.message);}
+ out.clientSignedAt=text(out.clientSignedAt??'',40);if(out.clientSignedAt&&!Number.isFinite(Date.parse(out.clientSignedAt)))fail(400,'Fecha de firma inválida.');
+ if(out.integrity!==null&&out.integrity!==undefined){const i=out.integrity;if(typeof i!=='object'||Array.isArray(i)||!/^[a-f0-9]{64}$/.test(i.hash||'')||!/^[a-f0-9]{32}$/.test(i.code||'')||i.algorithm!=='SHA-256'||typeof i.at!=='string'||!Number.isFinite(Date.parse(i.at)))fail(400,'Huella de integridad inválida.');out.integrity={hash:i.hash,code:i.code,algorithm:'SHA-256',at:i.at};}else out.integrity=null;
+ for(const [key,max,fields]of [['measurements',200,['id','label','value','unit','reference']],['checklist',300,['id','label','condition','notes']],['photos',24,['id','dataUrl','caption','tag','takenAt','geo']],['assets',150,['id','tag','name','model','serial','notes','equipmentId']],['actions',150,['id','description','priority','owner','dueDate','status']],['proposalItems',300,['id','description','quantity','unit','price']],['history',2000,['at','action','by']]]){
   if(!Array.isArray(out[key])||out[key].length>max)fail(400,`Cantidad de elementos inválida: ${key}.`);
   out[key]=out[key].map(item=>{if(!item||typeof item!=='object')fail(400,'Elemento inválido.');const copy={};for(const k of fields)copy[k]=text(item[k]??'',k==='dataUrl'?1000000:10000);return copy;});
  }
  for(const i of out.checklist)if(!['','Conforme','Atención','No conforme','No aplica'].includes(i.condition))fail(400,'Condición de inspección inválida.');
- for(const p of out.photos)if(!safeImage(p.dataUrl))fail(400,'Fotografía inválida.');
+ for(const p of out.photos){if(!safeImage(p.dataUrl))fail(400,'Fotografía inválida.');if(!validTakenAt(p.takenAt))fail(400,'Fecha de fotografía inválida.');if(!validGeo(p.geo))fail(400,'Ubicación de fotografía inválida.');}
  for(const k of ['clientSignature','technicianSignature']){text(out[k],1000000);if(out[k]&&!safeImage(out[k]))fail(400,'Firma inválida.');}
  for(const key of ['equipment','schedule']){if(!out[key]||typeof out[key]!=='object')fail(400,'Datos de equipo inválidos.');out[key]=Object.fromEntries(Object.keys(base[key]).map(k=>[k,text(out[key][k]??'',1000)]));}
  for(const i of out.proposalItems)if(!Number.isFinite(Number(i.quantity))||!Number.isFinite(Number(i.price))||Number(i.quantity)<0||Number(i.price)<0)fail(400,'Cantidad o precio inválido.');

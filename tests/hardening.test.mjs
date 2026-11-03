@@ -39,7 +39,7 @@ test('respuestas de API y de archivos estáticos incluyen cabeceras de seguridad
   assert.match(api.response.headers.get('Permissions-Policy'), /camera=\(self\)/);
   const page = await call(env, '/');
   assert.match(page.response.headers.get('Strict-Transport-Security'), /max-age=\d+/);
-  assert.match(page.response.headers.get('Permissions-Policy'), /geolocation=\(\)/);
+  assert.match(page.response.headers.get('Permissions-Policy'), /geolocation=\(self\)/);
   assert.match(page.response.headers.get('Content-Security-Policy'), /script-src 'self'/);
   env.DB.close();
 });
@@ -116,5 +116,22 @@ test('varias fotografías se guardan en paralelo conservando orden y contenido',
   assert.equal(stored.photos.length, 12);
   assert.deepEqual(stored.photos.map(p => p.caption), Array.from({length: 12}, (_, i) => 'Foto ' + i));
   assert.ok(stored.photos.every(p => /^\/api\/assets\/[a-f0-9]{64}$/.test(p.dataUrl)));
+  env.DB.close();
+});
+
+test('el asistente usa el modelo configurado y acota el contexto para no exceder la ventana del modelo', async () => {
+  const {env, cookie} = await setup();
+  let seen = null;
+  env.AI = {async run(model, input) { seen = {model, size: input.messages[1].content.length}; return {response: 'Texto propuesto'}; }};
+  const company = {...newCompany(), name: 'Empresa IA'};
+  assert.equal((await pushItem(env, cookie, 'companies', company)).status, 200);
+  const big = 'a'.repeat(18000);
+  const body = {action: 'rewrite', target: 'diagnosis', context: {companyId: company.id, objective: big, scope: big, workPerformed: big, diagnosis: big, observations: big, title: 'T', template: 'general'}};
+  assert.equal((await call(env, '/api/ai', body, cookie)).status, 200);
+  assert.equal(seen.model, '@cf/meta/llama-3.3-70b-instruct-fp8-fast');
+  assert.ok(seen.size < 40000, 'contexto de ' + seen.size + ' caracteres');
+  env.AI_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+  await call(env, '/api/ai', body, cookie);
+  assert.equal(seen.model, '@cf/meta/llama-3.1-8b-instruct', 'AI_MODEL sigue mandando');
   env.DB.close();
 });
