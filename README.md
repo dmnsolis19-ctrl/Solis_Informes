@@ -1,10 +1,19 @@
-# SOLIS Field Pro 3.5.0
+# SOLIS Field Pro 3.5.1
 
 Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, propuestas y seguimiento de intervenciones. Conserva el trabajo local y sincroniza con Cloudflare al recuperar conexión, con la aplicación abierta.
 
 **Si ya está publicada, empieza por [ACTUALIZAR_v3.5.0.md](ACTUALIZAR_v3.5.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
 
 Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
+
+## Novedades 3.5.1
+
+- Despliegue: `npm run deploy` ejecuta primero el build, para que los equipos instalados reciban siempre los archivos nuevos.
+- Servidor: límite de intentos atómico, cabeceras HSTS y Permissions-Policy, acceso a archivos mediante `file_access` indexado y fotografías procesadas en paralelo. Se retiró la ruta heredada `/api/users`; el equipo se administra en `/api/team`.
+- PWA: íconos `any` y `maskable` separados, ícono de iOS de 180 px, manifest completo con capturas e instrucciones de instalación.
+- Privacidad: la aplicación ya no incluye datos de ninguna empresa; la primera empresa es neutra («Mi empresa») y se completa en *Empresas y marca*.
+- Repositorio: `.gitignore`, integración continua en GitHub Actions, configuración de formato y documentación histórica en `docs/releases/`.
+- 100 pruebas automáticas superadas.
 
 ## Novedades 3.5.0
 
@@ -15,7 +24,7 @@ Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc
 - Atajos Ctrl/⌘+K para buscar y Ctrl/⌘+S para guardar; controles visibles equivalentes.
 - Modo Claro, Oscuro o Dispositivo con preferencia conservada; el documento exportado mantiene su fondo de papel.
 
-Base exacta: ZIP 3.4.0 proporcionado por el usuario. Se mantienen las trece bases, copias resguardadas y mejoras de sincronización. Consulta [docs/REVISION_3.5.md](docs/REVISION_3.5.md).
+Base exacta: ZIP 3.4.0 proporcionado por el usuario. Se mantienen las trece bases, copias resguardadas y mejoras de sincronización. Consulta [docs/releases/REVISION_3.5.md](docs/releases/REVISION_3.5.md).
 
 ## Funciones conservadas de 3.4.0
 
@@ -26,7 +35,7 @@ Base exacta: ZIP 3.4.0 proporcionado por el usuario. Se mantienen las trece base
 - Recorrido documental Preparar → Revisar → Aprobar → Entregar con acceso al siguiente paso.
 - Corrección del nombre del PDF descargado desde caché y lectura de configuración JSONC con comentarios y comas finales.
 
-Consulta [docs/REVISION_3.4.md](docs/REVISION_3.4.md) para la procedencia de esta entrega y su validación.
+Consulta [docs/releases/REVISION_3.4.md](docs/releases/REVISION_3.4.md) para la procedencia de esta entrega y su validación.
 
 ## Novedades anteriores: 3.2.0
 
@@ -37,7 +46,7 @@ Consulta [docs/REVISION_3.4.md](docs/REVISION_3.4.md) para la procedencia de est
 - Un registro rechazado no bloquea los demás envíos; las solicitudes simultáneas esperan la misma sincronización.
 - Espacio estimado y persistencia real del navegador. Diagnóstico basado en la respuesta del servidor.
 
-Consulta [docs/REVISION_3.2.md](docs/REVISION_3.2.md) para la revisión y los límites de la validación.
+Consulta [docs/releases/REVISION_3.2.md](docs/releases/REVISION_3.2.md) para la revisión y los límites de la validación.
 
 ## Funciones
 
@@ -86,7 +95,8 @@ Las pruebas usan SQLite real mediante un adaptador D1, R2 en memoria y dobles pa
 | `migrations/` | Migraciones D1 0001, 0002 y 0003; historial y auditoría |
 | `scripts/` | Servidor local, CI, caché y despliegue |
 | `tests/` | Dominio, migración, API, permisos, sincronización y offline |
-| `docs/` | Instalación, uso y verificación |
+| `docs/` | Instalación, uso y verificación; `docs/releases/` conserva las guías históricas |
+| `.github/` | Integración continua |
 
 Los QR usan bibliotecas locales con licencias incluidas en `THIRD_PARTY_NOTICES.md`.
 

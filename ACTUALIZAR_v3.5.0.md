@@ -37,4 +37,4 @@ Encontrarás la plantilla en **Plantillas de tu empresa**. Los informes nuevos t
 - Ctrl/⌘+S guarda el borrador; dentro de Estructura aplica los ajustes del formulario. Otros formularios se deben aplicar o cerrar primero.
 - Claro, Oscuro y Dispositivo se eligen en la barra superior. La preferencia permanece en ese navegador. Los documentos mantienen fondo de papel y marca profesional.
 
-Consulta `docs/REVISION_3.5.md` para las pruebas y la validación pendiente en tu entorno Cloudflare. El ZIP no realiza el despliegue por sí mismo.
+Consulta `docs/releases/REVISION_3.5.md` para las pruebas y la validación pendiente en tu entorno Cloudflare. El ZIP no realiza el despliegue por sí mismo.

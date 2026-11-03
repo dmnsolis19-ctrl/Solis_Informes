@@ -1,6 +1,6 @@
 {
   "name": "solis-field-pro",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "private": true,
   "type": "module",
   "description": "Informes profesionales offline con sincronización Cloudflare",
@@ -15,6 +15,8 @@
     "deploy": "node scripts/deploy.mjs",
     "db:local": "npx wrangler@4.92.0 d1 migrations apply solis-field --local",
     "db:remote": "npx wrangler@4.92.0 d1 migrations apply solis-field --remote",
-    "ci": "node scripts/ci.mjs"
+    "ci": "node scripts/ci.mjs",
+    "format": "npx prettier@3 --write \"worker/**/*.js\" \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
+    "format:check": "npx prettier@3 --check \"worker/**/*.js\" \"scripts/**/*.mjs\" \"tests/**/*.mjs\""
   }
 }

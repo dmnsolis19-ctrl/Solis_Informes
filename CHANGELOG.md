@@ -1,3 +1,16 @@
+# 3.5.1 · Despliegue seguro, endurecimiento y PWA · 2 de noviembre de 2026
+
+- `scripts/deploy.mjs` ejecuta el build antes de publicar; `scripts/build.mjs` excluye las capturas del precaché y funciona con rutas de Windows.
+- `rateLimit` usa una sola sentencia atómica (`INSERT … ON CONFLICT … RETURNING`).
+- Cabeceras `Strict-Transport-Security` y `Permissions-Policy` en la API y en los archivos estáticos.
+- Lectura y vinculación de archivos privados mediante `file_access`; los archivos anteriores se autorizan una vez por referencia y quedan indexados. Fotografías y archivos se procesan en paralelo (6 a la vez) conservando el orden.
+- Eliminada la ruta heredada `/api/users` (creaba cuentas `editor` con acceso a todas las empresas) y su código inactivo en el cliente.
+- Manifest con íconos `any` y `maskable` separados, `description`, `lang`, `display_override`, categorías y capturas; ícono de 180 px y metas para iOS.
+- Sin datos de empresa incluidos en el código: empresa inicial neutra que debe completarse antes de crear documentos.
+- `.gitignore`, `.editorconfig`, configuración de Prettier y flujo de GitHub Actions (`node scripts/ci.mjs` y comprobación de `sw.js`).
+- Documentación histórica movida a `docs/releases/`.
+- Sin migraciones D1 ni cambios en IndexedDB ni en el protocolo de sincronización. 100 pruebas automáticas superadas.
+
 # 3.5.0 · Estructura personalizada y productividad · 28 de octubre de 2026
 
 - Actualización sobre el ZIP 3.4.0 entregado por el usuario; conserva sus trece bases, copias resguardadas, recuperación y control de guardados entre pestañas.

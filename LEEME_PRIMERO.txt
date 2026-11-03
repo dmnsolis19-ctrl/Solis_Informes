@@ -15,4 +15,4 @@ favoritos, buscador rápido, atajos y modo oscuro.
 
 Personalizar: abre un borrador -> Estructura del informe.
 Guía: ACTUALIZAR_v3.5.0.md
-Validación: docs/REVISION_3.5.md
+Validación: docs/releases/REVISION_3.5.md
