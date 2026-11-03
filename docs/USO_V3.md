@@ -99,4 +99,9 @@ En Plantillas, marca ★ para favoritas y usa el filtro. Las favoritas se guarda
 
 El selector Claro/Oscuro/Dispositivo se encuentra en la barra superior y también en el portal del cliente. Su preferencia pertenece al navegador; el PDF mantiene el fondo de papel y la identidad de la empresa.
 
-Recorrido de actualización y límites: `ACTUALIZAR_v3.5.0.md`.
+Recorrido de actualización y límites: `docs/releases/ACTUALIZAR_v3.5.0.md`.
+
+
+## Gráficos, verificación y seguridad · 3.6
+
+Los recorridos de gráficos y CSV, verificación pública, fotografías con hora y ubicación, dictado, verificación en dos pasos, tarea diaria y errores de dispositivos están descritos en `ACTUALIZAR_v3.6.0.md`.

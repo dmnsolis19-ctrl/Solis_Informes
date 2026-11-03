@@ -179,3 +179,13 @@ La aplicación no garantiza sincronización con el navegador cerrado ni trabajo 
 ## Extensiones de la versión 3
 
 Consulta `docs/USO_V3.md` para configurar roles por empresa, portal de clientes, revisión y aprobación, biblioteca técnica, alertas y transcripción. Conserva las migraciones 0001, 0002 y 0003.
+
+
+## Extensiones de la versión 3.6
+
+- **Migración 0004:** la aplica `node scripts/deploy.mjs`. Si despliegas con otro comando, ejecuta `npm run db:remote` antes de publicar.
+- **Secreto `APP_SECRET`:** `npx wrangler secret put APP_SECRET` (32 caracteres o más). Cifra el secreto de la verificación en dos pasos.
+- **Variables opcionales:** `APP_URL`, `TIMEZONE`, `DIGEST_ENABLED`, `BACKUP_KEEP_DAYS`. Enlace de R2 opcional `BACKUP_BUCKET` para respaldar en un bucket aparte.
+- **Tarea diaria:** `triggers.crons` ejecuta `0 11 * * *` (UTC). Revisa su resultado en Observabilidad → Registros del Worker.
+- **Modelo de IA:** `AI_MODEL` usa Llama 3.3 70B (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`), con ventana de 24.000 tokens y mayor costo por uso que el modelo de 8B. El límite diario (`AI_DAILY_LIMIT`) sigue vigente.
+- Los detalles de uso están en `ACTUALIZAR_v3.6.0.md`.
