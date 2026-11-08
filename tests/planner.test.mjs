@@ -45,11 +45,17 @@ test('urgencyBuckets: filtros y orden por fecha y prioridad sin mutar',()=>{cons
 
 import {localDate} from '../public/js/domain.js';
 import {canGenerateVisits,missingVisits,plannerView} from '../public/js/planner-ui.js';
-test('solo admin, supervisor o modo local generan visitas',()=>{
+test('permiso de generar visitas considera el último rol conocido',()=>{
+  assert.equal(canGenerateVisits(null,''),true);
   assert.equal(canGenerateVisits(null),true);
+  assert.equal(canGenerateVisits(null,'technician'),false);
+  assert.equal(canGenerateVisits(null,'supervisor'),true);
+  assert.equal(canGenerateVisits(null,'client'),false);
   assert.equal(canGenerateVisits({role:'admin'}),true);
   assert.equal(canGenerateVisits({role:'supervisor'}),true);
-  for(const role of ['technician','editor','approver','client'])assert.equal(canGenerateVisits({role}),false);
+  assert.equal(canGenerateVisits({role:'technician'}),false);
+  assert.equal(canGenerateVisits({role:'technician'},'supervisor'),false);
+  for(const role of ['editor','approver','client'])assert.equal(canGenerateVisits({role}),false);
 });
 test('missingVisits respeta empresa y catálogo de equipos activo',()=>{
   const p=plan({id:'p1',equipmentId:'eq1',companyId:'c1'}),other=plan({id:'p2',equipmentId:'eq1',companyId:'c2'}),

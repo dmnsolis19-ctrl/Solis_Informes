@@ -5,14 +5,15 @@ const scoped=(state,key)=>(state[key]||[]).filter(x=>x.companyId===state.company
 const option=(value,label,selected)=>`<option value="${e(value)}" ${String(value)===String(selected)?'selected':''}>${e(label)}</option>`;
 const isPlan=r=>r.type==='Plan de mantenimiento';
 // Solo admin/supervisor (o modo local sin sesión) generan visitas: el Worker rechaza que un técnico escriba registros ajenos.
-export const canGenerateVisits=user=>!user||['admin','supervisor'].includes(user.role);
+// Sin sesión solo es modo local si el dispositivo nunca estuvo ligado a una cuenta (lastRole vacío) o fue de admin/supervisor.
+export const canGenerateVisits=(user,lastRole='')=>['admin','supervisor'].includes(user?user.role:lastRole||'admin');
 export const plannerEquipmentIds=state=>new Set(scoped(state,'equipment').map(x=>x.id));
 export const plannerPlans=state=>scoped(state,'workOrders').filter(isPlan);
 export const plannerVisits=state=>scoped(state,'workOrders').filter(r=>r.planId&&!isPlan(r));
 // Visitas faltantes de todos los planes activos de la empresa (puro, sin escribir).
 export function missingVisits(state,today){const ids=plannerEquipmentIds(state),visits=plannerVisits(state);return plannerPlans(state).flatMap(p=>ensureOccurrences(p,visits,today,ids));}
 let running=false;
-export async function ensurePlannerVisits(ctx){if(running||!canGenerateVisits(syncState.user))return 0;running=true;try{const rows=missingVisits(ctx.state,localDate());for(const r of rows)await ctx.db.saveEntity('workOrders',r);return rows.length;}finally{running=false;}}
+export async function ensurePlannerVisits(ctx){if(running)return 0;running=true;try{if(!canGenerateVisits(syncState.user,await ctx.db.meta('lastRole','')))return 0;const rows=missingVisits(ctx.state,localDate());for(const r of rows)await ctx.db.saveEntity('workOrders',r);return rows.length;}finally{running=false;}}
 const SECTIONS=[['overdue','Vencidos','Pasaron su fecha y siguen abiertos.'],['today','Hoy','Visitas con fecha de hoy.'],['week','Esta semana','Los próximos 7 días.'],['next30','Próximos 30 días','Hasta dentro de 30 días.']];
 function visitCard(v,state,today){const customer=scoped(state,'customers').find(x=>x.id===v.customerId),asset=scoped(state,'equipment').find(x=>x.id===v.equipmentId),late=v.dueDate<today;return `<article class="catalog-card" data-planner-visit="${e(v.id)}"><div class="catalog-card-copy"><span class="eyebrow">${e(fmtDate(v.dueDate))} · ${e(v.priority||'Media')}</span><h3>${e(v.name)}</h3><p>${e([customer?.name,asset?(asset.tag?asset.tag+' · ':'')+asset.name:''].filter(Boolean).join(' · '))}</p><span class="pill ${late?'':'neutral'}">${e(v.status)}</span> ${v.ownerId||v.owner?`<span class="pill neutral">${e(v.owner||'Técnico asignado')}</span>`:'<span class="pill neutral">Sin técnico</span>'}</div><div class="catalog-card-actions"><button class="btn secondary small" data-action="operation-edit" data-kind="workOrders" data-id="${e(v.id)}">Abrir / editar</button></div></article>`;}
 export function plannerView(state){const f=state.opsFilter||{},today=localDate(),visits=plannerVisits(state),buckets=urgencyBuckets(visits,today,{ownerId:f.ownerId,customerId:f.customerId,equipmentId:f.equipmentId}),plans=plannerPlans(state),paused=plans.filter(p=>p.planState==='Pausado'),filtered=!!(f.ownerId||f.customerId||f.equipmentId),total=SECTIONS.reduce((n,[k])=>n+buckets[k].length,0),people=state.people||[],owners=[...new Map(visits.filter(v=>v.ownerId).map(v=>[v.ownerId,v.owner||people.find(p=>p.id===v.ownerId)?.email||'Técnico asignado'])).entries()];
