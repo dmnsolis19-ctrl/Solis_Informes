@@ -10,7 +10,7 @@ Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc
 
 - **Planner:** nueva entrada del menú con las visitas por urgencia (vencidos, hoy, esta semana, próximos 30 días) y filtros por técnico, cliente y equipo.
 - **Planes con calendario fijo:** fecha ancla y periodicidad en días; las visitas se generan 90 días por adelantado y se inician como informe prellenado.
-- **Correr calendario:** si una visita se hizo con retraso, se puede mantener el calendario o correrlo desde la fecha real. «Órdenes y mantenimiento» conserva «Próxima intervención».
+- **Correr calendario:** si una visita se hizo con retraso, se puede mantener el calendario o correrlo desde la fecha real. «Órdenes y mantenimiento» conserva «Programar siguiente».
 - Detalle en [docs/USO_V3.md](docs/USO_V3.md#planner-de-mantenimiento).
 
 ## Novedades 3.6.0

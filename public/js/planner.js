@@ -2,7 +2,7 @@ import {newOperation,normalizeOperation} from './operations.js';
 import {localDate,templates} from './domain.js';
 export const PLANNER_HORIZON_DAYS=90;
 const ISO=/^\d{4}-\d{2}-\d{2}$/,dayNum=iso=>Math.round(Date.UTC(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8,10))/864e5);
-const validIso=s=>ISO.test(s||'')&&localDate(new Date(s+'T12:00:00'))===s;
+export const validIso=s=>ISO.test(s||'')&&localDate(new Date(s+'T12:00:00'))===s;
 export function addDays(iso,days){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+days);return localDate(d);}
 export const visitId=(planId,iso)=>('visit-'+planId+'-'+iso.replaceAll('-','')).slice(0,100);
 export const planAnchor=plan=>plan.anchorDate||plan.dueDate;
@@ -11,7 +11,11 @@ export function newVisit(plan,iso){const v=newOperation('workOrders',plan.compan
 // Tras correr el calendario la ancla es la fecha de la visita ya realizada: esa fecha no genera otra visita.
 const doneAnchor=plan=>{try{const h=JSON.parse(plan.anchorHistory||'[]'),l=Array.isArray(h)?h[h.length-1]:null;return l&&l.to===plan.anchorDate?plan.anchorDate:'';}catch{return '';}};
 // Ventana [hoy, hoy+horizonte] inclusive; nunca fechas pasadas.
-export function ensureOccurrences(plan,visits,today,equipmentIds,horizon=PLANNER_HORIZON_DAYS){if(!isPlanActive(plan,equipmentIds))return [];const anchor=planAnchor(plan),n=Number(plan.intervalDays),diff=dayNum(today)-dayNum(anchor),first=diff<=0?anchor:addDays(anchor,Math.ceil(diff/n)*n),last=addDays(today,horizon),have=new Map(visits.filter(v=>v.planId===plan.id).map(v=>[v.id,v])),skip=doneAnchor(plan),out=[];for(let d=first;d<=last;d=addDays(d,n)){if(d===skip)continue;const id=visitId(plan.id,d),ex=have.get(id);if(!ex)out.push(newVisit(plan,d));else if(ex.status==='Cancelada'&&ex.closedReason==='calendario corrido'&&ex.dueDate>=today)out.push({...ex,status:'Planificada',closedReason:''});}return out;}
+// Campos de la visita que siguen al plan mientras la visita no se haya tocado.
+const FOLLOW=['name','owner','ownerId','priority','scope','materials','reportTemplate'];
+// Copia de la visita con los valores actuales del plan, o null si no cambia nada o la visita ya no sigue al plan (no Planificada, edición manual o fecha pasada).
+export function refreshVisitFromPlan(plan,visit,today){if(visit.status!=='Planificada'||visit.manualEdit==='1'||!(visit.dueDate>=today))return null;const out={...visit};let changed=false;for(const k of FOLLOW)if(plan[k]!==undefined&&plan[k]!==(visit[k]??'')){out[k]=plan[k];changed=true;}return changed?out:null;}
+export function ensureOccurrences(plan,visits,today,equipmentIds,horizon=PLANNER_HORIZON_DAYS){if(!validIso(today)||!Number.isFinite(horizon)||!isPlanActive(plan,equipmentIds))return [];const anchor=planAnchor(plan),n=Number(plan.intervalDays),diff=dayNum(today)-dayNum(anchor),first=diff<=0?anchor:addDays(anchor,Math.ceil(diff/n)*n),last=addDays(today,horizon),have=new Map(visits.filter(v=>v.planId===plan.id).map(v=>[v.id,v])),skip=doneAnchor(plan),out=[];for(let d=first;d<=last;d=addDays(d,n)){if(d===skip)continue;const id=visitId(plan.id,d),ex=have.get(id);if(!ex)out.push(newVisit(plan,d));else if(ex.status==='Cancelada'&&ex.closedReason==='calendario corrido'&&ex.dueDate>=today){const r={...ex,status:'Planificada',closedReason:''};for(const k of FOLLOW)r[k]=plan[k]??ex[k];out.push(r);}}return out;}
 const CLOSED='calendario corrido',MAX_HISTORY=50;
 // Cancela (copias) las visitas futuras Planificada sin edición manual y devuelve las que faltan según la ancla actual.
 // Si una visita a cancelar coincide por id con una fecha nueva, se conserva (no se cancela ni se duplica).

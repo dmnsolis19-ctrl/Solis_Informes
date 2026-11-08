@@ -6,8 +6,8 @@
 - «Iniciar visita» crea un informe de servicio prellenado (cliente, sitio, equipo, objetivo y alcance; plantilla del plan o «Informe técnico general») y deja la visita «En curso»; luego «Abrir informe».
 - Cierre: al abrir el Planner un administrador o supervisor, las visitas cuyo informe está «Emitido» se cierran solas si fueron a tiempo (el calendario se mantiene). Si se hicieron con retraso, el diálogo «Esta visita se hizo con retraso» ofrece «Mantener calendario» o «Correr calendario desde esta visita»; esta última toma la fecha de servicio del informe como nueva ancla, cancela con motivo «calendario corrido» las visitas futuras planificadas sin edición manual (nunca las borra), las recrea desde la nueva ancla y conserva el historial de anclas en el plan. Escape deja la visita «En curso».
 - Editar la ancla o la periodicidad de un plan activo regenera las visitas futuras igual; reanudar un plan pausado las reconcilia. Los guardados se protegen contra sobrescribir registros modificados en otro dispositivo.
-- Sin migración D1, sin cambios en IndexedDB ni en el protocolo de sincronización. El botón «Próxima intervención» de «Órdenes y mantenimiento» no cambia. El resumen diario por correo ya lista las órdenes vencidas o de la semana y ahora incluye las visitas del Planner (los planes no aparecen).
-- 189 pruebas automáticas superadas y 9 pruebas de navegador superadas.
+- Sin migración D1, sin cambios en IndexedDB ni en el protocolo de sincronización. El botón «Programar siguiente» de «Órdenes y mantenimiento» no cambia. El resumen diario por correo ya lista las órdenes vencidas o de la semana y ahora incluye las visitas del Planner (los planes no aparecen).
+- 198 pruebas automáticas superadas y 9 pruebas de navegador superadas.
 
 # 3.6.0 · Gráficos, verificación y seguridad · 3 de noviembre de 2026
 

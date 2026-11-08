@@ -120,7 +120,7 @@ Cada plan permite editar, «Pausar», «Reanudar» y «Cerrar plan». Un plan ce
 
 ### Ciclo de una visita
 
-- Las visitas se crean por adelantado, 90 días desde hoy, como órdenes individuales «Planificada». Las crea el Planner al abrirse y tras sincronizar, solo en dispositivos de administrador o supervisor (o en modo local sin cuenta conocida). Los técnicos ven e inician las visitas asignadas a ellos y las que no tienen responsable.
+- Las visitas se crean por adelantado, 90 días desde hoy, como órdenes individuales «Planificada». Las crea el Planner al abrirse y tras sincronizar, solo en dispositivos de administrador o supervisor (o en modo local sin cuenta conocida). El Planner lista todas las visitas de la empresa; los técnicos solo pueden iniciar las asignadas a ellos y las que no tienen responsable.
 - «Iniciar visita» crea un informe de servicio prellenado (cliente, sitio, equipo, objetivo y alcance) con la plantilla del plan, o «Informe técnico general» si no tiene, y pasa la visita a «En curso». Después aparece «Abrir informe».
 - Cuando el informe queda «Emitido» y un administrador o supervisor abre el Planner, la visita se cierra. Si se hizo a tiempo, el calendario no cambia. Si la fecha de servicio del informe es posterior a la programada, aparece «Esta visita se hizo con retraso» con dos opciones: «Mantener calendario» (por defecto) o «Correr calendario desde esta visita». Escape deja la visita «En curso».
 
@@ -134,7 +134,7 @@ Plan cada 30 días con ancla el 1 de marzo (visitas: 1 mar, 31 mar, 30 abr, 30 m
 
 ### Roles y sincronización
 
-Administrador y supervisor generan visitas y cierran las completadas; el técnico ve e inicia las suyas o las que no tienen responsable. Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Próxima intervención» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
+Administrador y supervisor generan visitas y cierran las completadas; el técnico solo puede iniciar las visitas asignadas a él o sin responsable (el Planner las lista todas). Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Programar siguiente» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan; no se ofrece para planes del Planner ni para sus visitas. Los planes del Planner se editan desde el Planner (aunque se abran desde «Órdenes y mantenimiento»), no con el editor genérico. Al cambiar el técnico, la plantilla, el alcance o el nombre de un plan, las visitas futuras «Planificada» sin edición manual se actualizan; mover la fecha o cambiar el responsable de una visita a mano la marca como edición manual y el calendario ya no la cancela. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
 
 ### Limitaciones de la fase 1
 

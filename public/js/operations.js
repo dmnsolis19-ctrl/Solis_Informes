@@ -19,6 +19,14 @@ export function normalizeOperation(kind,input){if(!operationKinds.includes(kind)
  if(kind==='alertRules'){if(!['Medición','Recurrencia','Vencimiento'].includes(out.type)||!['Activa','Inactiva'].includes(out.status))throw new Error('Regla inválida.');for(const k of ['minimum','maximum','count','windowDays'])if(out[k]!==''&&!Number.isFinite(Number(out[k])))throw new Error('Límite numérico inválido.');if(out.type==='Medición'&&(!out.parameter.trim()||(out.minimum===''&&out.maximum==='')||(out.minimum!==''&&out.maximum!==''&&Number(out.minimum)>Number(out.maximum))))throw new Error('Define parámetro y límites coherentes.');if(out.type==='Recurrencia'&&(!out.parameter.trim()||Number(out.count)<2||Number(out.windowDays)<1))throw new Error('Define la falla, al menos dos recurrencias y su período.');}
  return out;
 }
+// Plan del planner (con ancla o estado); los planes heredados (solo dueDate) no lo son.
+export const isPlannerPlan=o=>o.type==='Plan de mantenimiento'&&!!(o.anchorDate||o.planState);
+// Órdenes que cuentan para alertas y «Próximos trabajos» del tablero: los planes del planner no son órdenes con fecha (sus visitas sí).
+export const dashboardOrders=orders=>orders.filter(w=>!isPlannerPlan(w));
+// «Programar siguiente» solo para órdenes/planes heredados: los planes y visitas del planner se programan desde el Planner.
+export const canScheduleNext=o=>!!o.intervalDays&&!isPlannerPlan(o)&&!o.planId;
+// Una visita del planner cuya fecha o responsable se cambian a mano queda marcada para que correr el calendario no la cancele.
+export function markManualEdit(before,after){if(!after.planId||!before)return after;const keys=['dueDate','ownerId','owner'];return keys.some(k=>(before[k]??'')!==(after[k]??''))?{...after,manualEdit:'1'}:after;}
 export const latestReports=reports=>reports.filter(r=>!reports.some(other=>other.folio===r.folio&&(other.revision||0)>(r.revision||0)));
 const canonical=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 export function measurementSeries(reports,equipmentId,parameter,unit){return latestReports(reports).filter(r=>r.equipmentRef===equipmentId).flatMap(r=>(r.measurements||[]).filter(m=>canonical(m.label)===canonical(parameter)&&(!unit||canonical(m.unit)===canonical(unit))&&m.value.trim()!==''&&Number.isFinite(Number(m.value.replace(',','.')))).map(m=>({date:r.serviceDate,value:Number(m.value.replace(',','.')),unit:m.unit,folio:r.folio,reportId:r.id}))).sort((a,b)=>a.date.localeCompare(b.date));}
