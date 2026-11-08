@@ -57,9 +57,13 @@ const scopedEq=state=>scoped(state,'equipment');
 async function setPlanState(ctx,id,planState,msg){await assertCanManage(ctx);const old=ctx.state.workOrders.find(r=>r.id===id&&r.companyId===ctx.state.companyId&&r.type==='Plan de mantenimiento');if(!old)throw new Error('No encontramos el plan. Actualiza la pantalla e inténtalo de nuevo.');const next={...normalizeOperation('workOrders',{...old,planState}),_sync:old._sync};let skipped=0;if(planState==='Activo')skipped=await reconcile(ctx,next,old);else await writePlan(ctx,next,old);await refresh(ctx,msg+skippedNote(skipped));}
 const findVisit=(ctx,id)=>ctx.state.workOrders.find(r=>r.id===id&&r.companyId===ctx.state.companyId&&r.planId&&!isPlan(r));
 // Inicia la visita: primero existe el informe, después la visita lo apunta (un fallo nunca deja una visita con informe inexistente).
-async function startVisitAction(ctx,id){const v0=findVisit(ctx,id);if(!v0)throw new Error('No encontramos la visita. Actualiza la pantalla e inténtalo de nuevo.');const stored=await ctx.db.get('workOrders',id);if(!stored||stored._sync?.deleted||!['Planificada','En curso'].includes(stored.status))throw new Error('Esta visita ya no está abierta. Actualiza la pantalla para ver su estado actual.');const reports=(await ctx.db.all('reports')),s=startVisit(stored,reports,localDate());
+// Guarda de reentrada por visita: devuelve false si ya hay un inicio en curso para ese id.
+export function claimStart(set,id){if(set.has(id))return false;set.add(id);return true;}
+const starting=new Set();
+async function startVisitAction(ctx,id,button){if(!claimStart(starting,id))return;if(button)button.disabled=true;try{await startVisitNow(ctx,id);}finally{starting.delete(id);if(button?.isConnected)button.disabled=false;}}
+async function startVisitNow(ctx,id){const v0=findVisit(ctx,id);if(!v0)throw new Error('No encontramos la visita. Actualiza la pantalla e inténtalo de nuevo.');const stored=await ctx.db.get('workOrders',id);if(!stored||stored._sync?.deleted||!['Planificada','En curso'].includes(stored.status))throw new Error('Esta visita ya no está abierta. Actualiza la pantalla para ver su estado actual.');const reports=(await ctx.db.all('reports')),s=startVisit(stored,reports,localDate());
 if(!s.create){if(stored.status!=='En curso'||stored.reportId!==s.reportId){await assertStart(ctx,stored);await ctx.db.saveEntity('workOrders',{...s.visit,createdAt:stored.createdAt,_sync:stored._sync});await ctx.reload();}await ctx.openReport(s.reportId);return;}
-await assertStart(ctx,stored);const prefill={};if(stored.name)prefill.objective=stored.name;if(stored.scope)prefill.scope=stored.scope;
+await assertStart(ctx,stored);{const again=await ctx.db.get('workOrders',id),r2=again&&!again._sync?.deleted?startVisit(again,await ctx.db.all('reports'),localDate()):null;if(!r2||!['Planificada','En curso'].includes(again.status))throw new Error('Esta visita ya no está abierta. Actualiza la pantalla para ver su estado actual.');if(!r2.create){await ctx.openReport(r2.reportId);return;}}const prefill={};if(stored.name)prefill.objective=stored.name;if(stored.scope)prefill.scope=stored.scope;
 const report=await ctx.createReport(s.reportKey,null,stored.equipmentId,prefill);if(!report)return;
 try{const latest=await ctx.db.get('workOrders',id)||stored;await ctx.db.saveEntity('workOrders',{...s.visit,reportId:report.id,createdAt:latest.createdAt,_sync:latest._sync});await ctx.reload();}catch(error){ctx.toast('El informe '+report.folio+' se creó, pero no pudimos vincularlo a la visita. Vuelve al Planner e inicia la visita otra vez.',true);throw error;}}
 async function assertStart(ctx,visit){if(!canStartVisit(visit,syncState.user,await ctx.db.meta('lastRole','')))throw new Error('Esta visita está asignada a otro técnico. Pídele a un supervisor que la reasigne.');}
@@ -85,7 +89,7 @@ const last=await ctx.db.get('workOrders',stored.id);if(!last||last.status!=='En 
 await ctx.db.saveEntity('workOrders',{...r.visit,createdAt:last.createdAt,_sync:last._sync});n++;ctx.toast('Visita completada'+(mode==='shift'?' y calendario corrido.':'.'));await ctx.reload();}
 return n;}finally{closing=false;}}
 export async function handlePlannerAction(a,button,ctx){
-if(a==='planner-start'){await startVisitAction(ctx,button.dataset.id);return true;}
+if(a==='planner-start'){await startVisitAction(ctx,button.dataset.id,button);return true;}
 if(a==='planner-plan-new'){await planDialog(ctx,null);return true;}
 if(a==='planner-plan-edit'){const p=ctx.state.workOrders.find(r=>r.id===button.dataset.id&&r.companyId===ctx.state.companyId);if(!p)throw new Error('No encontramos el plan. Actualiza la pantalla e inténtalo de nuevo.');await planDialog(ctx,p);return true;}
 if(a==='planner-plan-save'){await savePlan(ctx);return true;}

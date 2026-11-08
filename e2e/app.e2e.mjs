@@ -274,3 +274,17 @@ test('una visita hecha a tiempo se cierra sola y conserva el calendario', async 
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+test('doble clic en Iniciar visita crea un solo informe', async () => {
+  const {context, page} = await newPage();
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  await plannerFixture(page);
+  await page.locator('[data-planner-visit]').first().getByRole('button', {name: 'Iniciar visita'}).dblclick();
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).some(r => r.planId && r.status === 'En curso' && r.reportId));
+  await page.waitForTimeout(800);
+  const out = await page.evaluate(async () => { const db = await import('/js/store.js'), reps = await db.all('reports'), v = (await db.all('workOrders')).filter(r => r.planId && r.status === 'En curso'); return {reports: reps.filter(r => r.equipmentRef).length, visits: v.length, same: v[0]?.reportId === reps[0]?.id}; });
+  assert.equal(out.reports, 1); assert.equal(out.visits, 1); assert.equal(out.same, true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});

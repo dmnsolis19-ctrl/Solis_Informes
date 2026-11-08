@@ -144,3 +144,9 @@ test('tras correr el calendario la fecha ancla (visita ya hecha) no genera otra 
   assert.ok(r.create.length>0&&r.create.every(x=>x.dueDate>'2026-01-20'));assert.equal(r.create[0].dueDate,'2026-02-19');
   assert.equal(ensureOccurrences(r.plan,[],'2026-01-20',eq)[0].dueDate,'2026-02-19');
 });
+import {claimStart} from '../public/js/planner-ui.js';
+test('claimStart: el segundo inicio de la misma visita se ignora hasta liberarla',()=>{
+  const set=new Set();
+  assert.equal(claimStart(set,'v1'),true);assert.equal(claimStart(set,'v1'),false);assert.equal(claimStart(set,'v2'),true);
+  set.delete('v1');assert.equal(claimStart(set,'v1'),true);
+});
