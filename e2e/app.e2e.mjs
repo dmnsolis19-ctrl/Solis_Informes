@@ -120,3 +120,37 @@ test('el Planner lista las visitas generadas de un plan por urgencia', async () 
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+test('crear un plan para dos equipos desde el diálogo genera sus visitas', async () => {
+  const {context, page} = await newPage();
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js');
+    const companyId = (await db.all('companies'))[0].id;
+    for (const [tag, name] of [['EQ-A', 'Bomba A'], ['EQ-B', 'Bomba B']]) await db.saveEntity('equipment', Object.assign(newCatalog('equipment', companyId), {name, tag}));
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.getByRole('button', {name: 'Crear plan'}).first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Nombre del plan').fill('Mantención mensual');
+  await dialog.getByLabel('Periodicidad (días)').fill('30');
+  await dialog.getByRole('button', {name: 'Crear plan'}).click();
+  await dialog.getByText('Selecciona al menos un equipo.').waitFor();
+  await dialog.getByLabel('EQ-A · Bomba A').check();
+  await dialog.getByLabel('EQ-B · Bomba B').check();
+  await dialog.getByRole('button', {name: 'Crear plan'}).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Mantención mensual · EQ-A'}).first().waitFor();
+  await page.locator('[data-planner-visit]', {hasText: 'Mantención mensual · EQ-B'}).first().waitFor();
+  assert.equal(await page.locator('[data-planner-plan]').count(), 2);
+  const before = await page.locator('[data-planner-visit]').count();
+  await page.locator('[data-planner-plan]').first().getByRole('button', {name: 'Editar plan'}).click();
+  await page.getByRole('dialog').getByLabel('Periodicidad (días)').fill('10');
+  await page.getByRole('dialog').getByRole('button', {name: 'Guardar plan'}).click();
+  await page.waitForFunction(n => document.querySelectorAll('[data-planner-visit]').length > n, before);
+  await page.locator('[data-planner-plan]').first().getByRole('button', {name: 'Pausar plan'}).click();
+  await page.locator('.notice', {hasText: 'pausado'}).waitFor();
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});

@@ -72,3 +72,9 @@ test('plannerView escapa texto y muestra secciones y estado vacío',()=>{
   assert.ok(!html.includes('<img src=x>'));
   for(const t of ['Vencidos','Hoy','Esta semana','Próximos 30 días'])assert.ok(html.includes(t));
 });
+
+import {plansFromForm} from '../public/js/planner.js';
+const eqs=['a','b','c'].map(i=>({id:'e-'+i,companyId:'c1',name:'Equipo '+i,tag:'T-'+i,customerId:'cu-'+i,siteId:'si-'+i}));
+const form=(o={})=>({name:'Plan anual',equipmentIds:eqs.map(x=>x.id),anchorDate:'2026-03-02',intervalDays:'30',ownerId:'',owner:'',scope:'',reportTemplate:'general',...o});
+test('plansFromForm crea un plan por equipo con cliente e instalación del equipo',()=>{const out=plansFromForm(form(),eqs,'c1');assert.equal(out.length,3);assert.equal(new Set(out.map(p=>p.id)).size,3);out.forEach((p,i)=>{assert.equal(p.type,'Plan de mantenimiento');assert.equal(p.planState,'Activo');assert.equal(p.status,'Planificada');assert.equal(p.equipmentId,eqs[i].id);assert.equal(p.customerId,eqs[i].customerId);assert.equal(p.siteId,eqs[i].siteId);assert.equal(p.anchorDate,'2026-03-02');assert.equal(p.intervalDays,'30');assert.equal(p.reportTemplate,'general');assert.doesNotThrow(()=>normalizeOperation('workOrders',p));});});
+test('plansFromForm valida equipos, ancla, periodicidad y empresa',()=>{assert.throws(()=>plansFromForm(form({equipmentIds:[]}),eqs,'c1'),/^Error: Selecciona al menos un equipo\.$/);for(const o of [{anchorDate:''},{intervalDays:''},{intervalDays:'0'},{intervalDays:'1.5'},{anchorDate:'2026-02-30'}])assert.throws(()=>plansFromForm(form(o),eqs,'c1'),/^Error: Define fecha ancla y periodicidad\.$/,JSON.stringify(o));assert.throws(()=>plansFromForm(form(),[{...eqs[0],companyId:'c2'},...eqs.slice(1)],'c1'),/^Error: El equipo pertenece a otra empresa\.$/);assert.throws(()=>plansFromForm(form({name:' '}),eqs,'c1'),/Completa el nombre/);});
