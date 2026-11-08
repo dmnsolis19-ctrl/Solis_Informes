@@ -157,15 +157,23 @@ test('crear un plan para dos equipos desde el diálogo genera sus visitas', asyn
   assert.equal(st['EQ-A'].plans, 1); assert.equal(st['EQ-B'].plans, 1);
   assert.deepEqual(st['EQ-A'].planned, await grid(st.today, 30));
   const card = page.locator('[data-planner-plan]', {hasText: 'EQ-A'});
+  const g30 = await grid(st.today, 30), busy = g30[1];
+  // Otro dispositivo inicia una visita después de cargar la pantalla: no debe cancelarse.
+  await page.evaluate(async ([date]) => {
+    const db = await import('/js/store.js'), v = (await db.all('workOrders')).find(r => r.planId && r.name.endsWith('EQ-A') && r.dueDate === date);
+    await db.saveEntity('workOrders', {...v, status: 'En curso'});
+  }, [busy]);
   await card.getByRole('button', {name: 'Editar plan'}).click();
   await page.getByRole('dialog').getByLabel('Periodicidad (días)').fill('7');
   await page.getByRole('dialog').getByRole('button', {name: 'Guardar plan'}).click();
   await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
+  await page.locator('#toast', {hasText: '1 visita no se canceló porque cambió en otro dispositivo'}).waitFor();
   st = await state();
   const g7 = await grid(st.today, 7);
+  assert.equal(await page.evaluate(async d => (await (await import('/js/store.js')).all('workOrders')).find(r => r.planId && r.name.endsWith('EQ-A') && r.dueDate === d).status, busy), 'En curso');
   assert.deepEqual(st['EQ-A'].planned, g7);
   assert.equal(new Set(st['EQ-A'].planned).size, st['EQ-A'].planned.length);
-  assert.deepEqual(st['EQ-A'].cancelled, (await grid(st.today, 30)).filter(d => !g7.includes(d)).map(d => [d, 'calendario corrido']));
+  assert.deepEqual(st['EQ-A'].cancelled, g30.filter(d => !g7.includes(d) && d !== busy).map(d => [d, 'calendario corrido']));
   assert.equal((await state())['EQ-B'].interval, '30');
   await card.getByRole('button', {name: 'Pausar plan'}).click();
   await page.locator('.notice', {hasText: 'pausado'}).waitFor();
@@ -178,7 +186,7 @@ test('crear un plan para dos equipos desde el diálogo genera sus visitas', asyn
   await card.getByRole('button', {name: 'Pausar plan'}).waitFor();
   st = await state();
   assert.equal(st['EQ-A'].planState, 'Activo');
-  assert.deepEqual(st['EQ-A'].planned, await grid(st.today, 10));
+  assert.deepEqual(st['EQ-A'].planned, (await grid(st.today, 10)).filter(d => d !== busy));
   assert.ok(st['EQ-A'].cancelled.every(([, r]) => r === 'calendario corrido'));
   await card.getByRole('button', {name: 'Pausar plan'}).click();
   assert.deepEqual(page.errors, []);

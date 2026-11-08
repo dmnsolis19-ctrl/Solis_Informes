@@ -81,3 +81,31 @@ test('plansFromForm valida equipos, ancla, periodicidad y empresa',()=>{assert.t
 test('plansFromForm reutiliza los ids dados y registra los nuevos; equipo desconocido sigue fallando',()=>{const ids={};const a=plansFromForm(form(),eqs,'c1',ids);assert.deepEqual(Object.keys(ids).sort(),eqs.map(x=>x.id));const b=plansFromForm(form(),eqs,'c1',ids);assert.deepEqual(b.map(p=>p.id),a.map(p=>p.id));assert.notEqual(plansFromForm(form(),eqs,'c1')[0].id,a[0].id);assert.throws(()=>plansFromForm(form({equipmentIds:['nope']}),eqs,'c1',ids),/Selecciona al menos un equipo\./);});
 import {assertCanManagePlans} from '../public/js/planner-ui.js';
 test('assertCanManagePlans: técnico no, supervisor y modo local sí',()=>{assert.throws(()=>assertCanManagePlans({role:'technician'}),/no permite administrar planes/);assert.throws(()=>assertCanManagePlans(null,'technician'),/no permite/);assert.doesNotThrow(()=>assertCanManagePlans({role:'supervisor'}));assert.doesNotThrow(()=>assertCanManagePlans({role:'admin'}));assert.doesNotThrow(()=>assertCanManagePlans(null,''));});
+import {shouldWriteCancel,shouldWriteCreate,planConflict} from '../public/js/planner.js';
+test('shouldWriteCancel: omite visitas cambiadas, borradas o con edición manual; reintento propio = hecho',()=>{
+  assert.equal(shouldWriteCancel({status:'Planificada'}),'write');
+  assert.equal(shouldWriteCancel({status:'En curso',reportId:'r1'}),'skip');
+  assert.equal(shouldWriteCancel({status:'Planificada',manualEdit:'1'}),'skip');
+  assert.equal(shouldWriteCancel({status:'Planificada',_sync:{deleted:true}}),'skip');
+  assert.equal(shouldWriteCancel({status:'Cancelada',closedReason:'calendario corrido'}),'done');
+  assert.equal(shouldWriteCancel({status:'Cancelada',closedReason:''}),'skip');
+  assert.equal(shouldWriteCancel(undefined),'skip');
+});
+test('shouldWriteCreate: no pisa ni resucita registros cambiados',()=>{
+  const fresh={status:'Planificada'},rev={status:'Planificada',closedReason:''};
+  assert.equal(shouldWriteCreate(undefined,fresh),'write');
+  assert.equal(shouldWriteCreate({status:'Planificada'},fresh),'done');
+  assert.equal(shouldWriteCreate({status:'Planificada'},rev),'done');
+  assert.equal(shouldWriteCreate({status:'Cancelada',closedReason:'calendario corrido'},rev),'write');
+  assert.equal(shouldWriteCreate({status:'Cancelada',closedReason:''},rev),'skip');
+  assert.equal(shouldWriteCreate({status:'En curso'},rev),'skip');
+  assert.equal(shouldWriteCreate({status:'Cancelada',closedReason:'calendario corrido',_sync:{deleted:true}},rev),'skip');
+});
+test('planConflict: plan más nuevo, borrado, o con los mismos valores buscados',()=>{
+  const snap={updatedAt:'t1',name:'P',intervalDays:'30'},want={name:'P',intervalDays:'7'};
+  assert.equal(planConflict({...snap},snap,want),false);
+  assert.equal(planConflict({updatedAt:'t2',name:'P',intervalDays:'15'},snap,want),true);
+  assert.equal(planConflict({updatedAt:'t2',name:'P',intervalDays:'7'},snap,want),false);
+  assert.equal(planConflict({...snap,_sync:{deleted:true}},snap,want),true);
+  assert.equal(planConflict(undefined,snap,want),true);
+});
