@@ -42,3 +42,27 @@ const uv=(id,dueDate,o={})=>({id,dueDate,status:'Planificada',priority:'Media',t
 test('urgencyBuckets: bordes hoy, +7, +8, +30, +31',()=>{const T='2026-03-10',b=urgencyBuckets([uv('a','2026-03-09'),uv('b',T),uv('c','2026-03-11'),uv('d','2026-03-17'),uv('e','2026-03-18'),uv('f','2026-04-09'),uv('g','2026-04-10')],T),ids=k=>b[k].map(x=>x.id);assert.deepEqual(ids('overdue'),['a']);assert.deepEqual(ids('today'),['b']);assert.deepEqual(ids('week'),['c','d']);assert.deepEqual(ids('next30'),['e','f']);});
 test('urgencyBuckets: excluye cerradas, planes y fechas inválidas; En curso vencida va a overdue',()=>{const T='2026-03-10',b=urgencyBuckets([uv('a','2026-03-01',{status:'En curso'}),uv('b',T,{status:'Completada'}),uv('c',T,{status:'Cancelada'}),uv('p',T,{type:'Plan de mantenimiento'}),uv('x',''),uv('y','31/03/2026'),{id:'z',status:'Planificada'}],T);assert.deepEqual(b.overdue.map(x=>x.id),['a']);assert.deepEqual([b.today,b.week,b.next30],[[],[],[]]);});
 test('urgencyBuckets: filtros y orden por fecha y prioridad sin mutar',()=>{const T='2026-03-10',src=[uv('a',T,{priority:'Baja',ownerId:'o1'}),uv('b',T,{priority:'Crítica',ownerId:'o1',customerId:'c1',equipmentId:'e1'}),uv('c',T,{priority:'Alta',ownerId:'o2'}),uv('d','2026-03-09',{priority:'Baja',ownerId:'o1'})],copy=JSON.stringify(src);assert.deepEqual(urgencyBuckets(src,T).today.map(x=>x.id),['b','c','a']);assert.deepEqual(urgencyBuckets(src,T,{ownerId:'o1'}).today.map(x=>x.id),['b','a']);assert.deepEqual(urgencyBuckets(src,T,{ownerId:'o1',customerId:'c1',equipmentId:'e1'}).today.map(x=>x.id),['b']);assert.deepEqual(urgencyBuckets(src,T,{ownerId:''}).overdue.map(x=>x.id),['d']);assert.equal(JSON.stringify(src),copy);});
+
+import {localDate} from '../public/js/domain.js';
+import {canGenerateVisits,missingVisits,plannerView} from '../public/js/planner-ui.js';
+test('solo admin, supervisor o modo local generan visitas',()=>{
+  assert.equal(canGenerateVisits(null),true);
+  assert.equal(canGenerateVisits({role:'admin'}),true);
+  assert.equal(canGenerateVisits({role:'supervisor'}),true);
+  for(const role of ['technician','editor','approver','client'])assert.equal(canGenerateVisits({role}),false);
+});
+test('missingVisits respeta empresa y catálogo de equipos activo',()=>{
+  const p=plan({id:'p1',equipmentId:'eq1',companyId:'c1'}),other=plan({id:'p2',equipmentId:'eq1',companyId:'c2'}),
+    state={companyId:'c1',workOrders:[p,other],equipment:[{id:'eq1',companyId:'c1'}]};
+  const out=missingVisits(state,'2026-01-15');
+  assert.ok(out.length>0);assert.ok(out.every(v=>v.planId==='p1'));
+  assert.equal(missingVisits({...state,equipment:[]},'2026-01-15').length,0);
+});
+test('plannerView escapa texto y muestra secciones y estado vacío',()=>{
+  const empty=plannerView({companyId:'c1',workOrders:[],equipment:[],customers:[],opsFilter:{}});
+  assert.match(empty,/Aún no hay planes/);
+  const v={...newOperation('workOrders','c1'),name:'<img src=x>',planId:'p1',dueDate:localDate(),status:'Planificada'};
+  const html=plannerView({companyId:'c1',workOrders:[plan({id:'p1'}),v],equipment:[],customers:[],opsFilter:{}});
+  assert.ok(!html.includes('<img src=x>'));
+  for(const t of ['Vencidos','Hoy','Esta semana','Próximos 30 días'])assert.ok(html.includes(t));
+});

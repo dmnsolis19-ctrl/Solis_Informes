@@ -91,3 +91,32 @@ test('las plantillas nuevas aparecen por especialidad y crean informes válidos'
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+test('el Planner lista las visitas generadas de un plan por urgencia', async () => {
+  const {context, page} = await newPage();
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {addDays} = await import('/js/planner.js'), {localDate} = await import('/js/domain.js');
+    const companyId = (await db.all('companies'))[0].id, today = localDate();
+    const customer = Object.assign(newCatalog('customers', companyId), {name: 'Cliente Planner'}); await db.saveEntity('customers', customer);
+    const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Planner', tag: 'EQ-1', customerId: customer.id}); await db.saveEntity('equipment', asset);
+    const plan = (name, anchorDate) => Object.assign(newCatalog('workOrders', companyId), {name, type: 'Plan de mantenimiento', customerId: customer.id, equipmentId: asset.id, anchorDate, dueDate: anchorDate, intervalDays: '30', status: 'Planificada', planState: 'Activo'});
+    await db.saveEntity('workOrders', plan('Plan futuro', addDays(today, -20)));
+    await db.saveEntity('workOrders', plan('Plan hoy', today));
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name: 'Visita atrasada', type: 'Orden de trabajo', planId: 'plan-antiguo', customerId: customer.id, equipmentId: asset.id, dueDate: addDays(today, -3), status: 'Planificada'}));
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  for (const title of ['Vencidos', 'Hoy', 'Esta semana', 'Próximos 30 días']) await page.waitForSelector(`h2:text-is("${title}")`);
+  const section = title => page.locator('.planner-section', {has: page.locator(`h2:text-is("${title}")`)});
+  await section('Hoy').locator('text=Plan hoy').waitFor();
+  await section('Vencidos').locator('text=Visita atrasada').waitFor();
+  await section('Próximos 30 días').locator('text=Plan futuro').waitFor();
+  assert.ok(await section('Hoy').locator('.pill', {hasText: 'Sin técnico'}).count() > 0);
+  await page.selectOption('[data-ops-filter="equipmentId"]', {label: 'EQ-1 · Equipo Planner'});
+  await section('Hoy').locator('text=Plan hoy').waitFor();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
