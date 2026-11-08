@@ -126,10 +126,10 @@ Cada plan permite editar, «Pausar», «Reanudar» y «Cerrar plan». Un plan ce
 
 ### Correr calendario
 
-Plan cada 30 días con ancla el 1 de marzo, y la visita del 1 de abril se hace el 10 de abril:
+Plan cada 30 días con ancla el 1 de marzo (visitas: 1 mar, 31 mar, 30 abr, 30 may); la visita del 31 de marzo se hace el 9 de abril, con retraso:
 
-- «Mantener calendario»: las siguientes siguen el 1 de mayo, 31 de mayo, etc.
-- «Correr calendario»: la nueva ancla es el 10 de abril y las siguientes caen el 10 de mayo, 9 de junio, etc.
+- «Mantener calendario»: las siguientes siguen el 30 de abril y el 30 de mayo.
+- «Correr calendario»: la nueva ancla es el 9 de abril y las siguientes caen el 9 de mayo y el 8 de junio.
 - Las visitas futuras planificadas sin edición manual se cancelan con motivo «calendario corrido» (no se borran) y se recrean desde la nueva ancla; el plan guarda el historial de anclas.
 
 ### Roles y sincronización
