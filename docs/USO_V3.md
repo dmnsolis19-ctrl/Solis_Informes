@@ -112,15 +112,15 @@ Los recorridos de gráficos y CSV, verificación pública, fotografías con hora
 
 ### Crear un plan
 
-1. Pulsa «Crear plan» y elige uno o más equipos. Con varios equipos se crea un plan por equipo; un equipo puede tener varios planes.
-2. Define la fecha ancla (primera visita) y la periodicidad en días. El calendario es fijo: las visitas caen en ancla + n × días, sin importar cuándo se hicieron las anteriores.
+1. Pulsa «Crear plan», escribe el nombre del plan (obligatorio) y elige uno o más equipos. Con varios equipos se crea un plan por equipo; un equipo puede tener varios planes.
+2. Define la fecha ancla, que es la fecha de la primera visita, y la periodicidad en días. El calendario es fijo: las visitas caen en ancla + n × días, sin importar cuándo se hicieron las anteriores.
 3. Opcionalmente indica técnico por defecto, plantilla de informe y alcance.
 
 Cada plan permite editar, «Pausar», «Reanudar» y «Cerrar plan». Un plan cerrado no se reabre. Editar la ancla o la periodicidad de un plan activo regenera las visitas futuras; reanudar uno pausado las reconcilia.
 
 ### Ciclo de una visita
 
-- Las visitas se crean por adelantado, 90 días desde hoy, como órdenes individuales «Planificada». Las crea el Planner al abrirse y tras sincronizar, solo en dispositivos de administrador o supervisor (o en modo local sin cuenta conocida). Los técnicos ven e inician sus visitas.
+- Las visitas se crean por adelantado, 90 días desde hoy, como órdenes individuales «Planificada». Las crea el Planner al abrirse y tras sincronizar, solo en dispositivos de administrador o supervisor (o en modo local sin cuenta conocida). Los técnicos ven e inician las visitas asignadas a ellos y las que no tienen responsable.
 - «Iniciar visita» crea un informe de servicio prellenado (cliente, sitio, equipo, objetivo y alcance) con la plantilla del plan, o «Informe técnico general» si no tiene, y pasa la visita a «En curso». Después aparece «Abrir informe».
 - Cuando el informe queda «Emitido» y un administrador o supervisor abre el Planner, la visita se cierra. Si se hizo a tiempo, el calendario no cambia. Si la fecha de servicio del informe es posterior a la programada, aparece «Esta visita se hizo con retraso» con dos opciones: «Mantener calendario» (por defecto) o «Correr calendario desde esta visita». Escape deja la visita «En curso».
 
@@ -134,7 +134,7 @@ Plan cada 30 días con ancla el 1 de marzo (visitas: 1 mar, 31 mar, 30 abr, 30 m
 
 ### Roles y sincronización
 
-Administrador y supervisor generan visitas y cierran las completadas; el técnico ve e inicia las suyas. Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Próxima intervención» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
+Administrador y supervisor generan visitas y cierran las completadas; el técnico ve e inicia las suyas o las que no tienen responsable. Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Próxima intervención» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
 
 ### Limitaciones de la fase 1
 
