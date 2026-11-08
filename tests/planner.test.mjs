@@ -109,3 +109,38 @@ test('planConflict: plan más nuevo, borrado, o con los mismos valores buscados'
   assert.equal(planConflict({...snap,_sync:{deleted:true}},snap,want),true);
   assert.equal(planConflict(undefined,snap,want),true);
 });
+import {startVisit} from '../public/js/planner.js';
+import {canStartVisit} from '../public/js/planner-ui.js';
+const sv=(o={})=>({...newOperation('workOrders','c1'),id:'visit-p1-20260115',planId:'p1',status:'Planificada',dueDate:'2026-01-15',...o});
+test('startVisit usa reportTemplate y cae en general si es inválida o vacía',()=>{
+  assert.equal(startVisit(sv({reportTemplate:'generator'}),[],'2026-01-15').reportKey,'generator');
+  assert.equal(startVisit(sv({reportTemplate:''}),[],'2026-01-15').reportKey,'general');
+  assert.equal(startVisit(sv({reportTemplate:'no-existe'}),[],'2026-01-15').reportKey,'general');
+  const s=startVisit(sv(),[],'2026-01-15');assert.equal(s.visit.status,'En curso');assert.equal(s.create,true);
+});
+test('startVisit no crea otro informe si el vinculado existe y no está borrado',()=>{
+  const s=startVisit(sv({status:'En curso',reportId:'r1'}),[{id:'r1'}],'2026-01-15');
+  assert.equal(s.create,false);assert.equal(s.reportId,'r1');assert.equal(s.visit.reportId,'r1');
+});
+test('startVisit crea un informe nuevo si el vinculado está borrado o no existe',()=>{
+  for(const reports of [[{id:'r1',_sync:{deleted:true}}],[]]){const s=startVisit(sv({status:'En curso',reportId:'r1'}),reports,'2026-01-15');assert.equal(s.create,true);assert.equal(s.reportId,'');assert.equal(s.visit.reportId,'');assert.equal(s.visit.status,'En curso');}
+});
+test('canStartVisit: técnico solo en visitas sin asignar o propias',()=>{
+  const tech={id:'u1',role:'technician'};
+  assert.equal(canStartVisit(sv({ownerId:''}),tech,''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u1'}),tech,''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),tech,''),false);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),{id:'a',role:'admin'},''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),null,''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),null,'technician'),false);
+  assert.equal(canStartVisit(sv({ownerId:''}),null,'technician'),true);
+});
+test('tras correr el calendario la fecha ancla (visita ya hecha) no genera otra visita',()=>{
+  const p=plan({id:'p1',equipmentId:'e1',companyId:'c1',intervalDays:'30',anchorDate:'2026-01-15',dueDate:'2026-01-15'});
+  const v=sv({equipmentId:'e1'}),r=closeVisit(p,[v],v,'2026-01-20','shift','2026-01-20','t',eq);
+  assert.equal(r.plan.anchorDate,'2026-01-20');
+  const all=ensureOccurrences(r.plan,[r.visit,...r.create],'2026-01-20',eq).map(x=>x.dueDate);
+  assert.deepEqual(all,[]);
+  assert.ok(r.create.length>0&&r.create.every(x=>x.dueDate>'2026-01-20'));assert.equal(r.create[0].dueDate,'2026-02-19');
+  assert.equal(ensureOccurrences(r.plan,[],'2026-01-20',eq)[0].dueDate,'2026-02-19');
+});

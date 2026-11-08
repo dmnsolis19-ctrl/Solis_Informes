@@ -1,5 +1,5 @@
 import {newOperation,normalizeOperation} from './operations.js';
-import {localDate} from './domain.js';
+import {localDate,templates} from './domain.js';
 export const PLANNER_HORIZON_DAYS=90;
 const ISO=/^\d{4}-\d{2}-\d{2}$/,dayNum=iso=>Math.round(Date.UTC(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8,10))/864e5);
 const validIso=s=>ISO.test(s||'')&&localDate(new Date(s+'T12:00:00'))===s;
@@ -8,8 +8,10 @@ export const visitId=(planId,iso)=>('visit-'+planId+'-'+iso.replaceAll('-','')).
 export const planAnchor=plan=>plan.anchorDate||plan.dueDate;
 export function isPlanActive(plan,equipmentIds){return ['','Activo'].includes(plan.planState||'')&&plan.status!=='Cancelada'&&equipmentIds.has(plan.equipmentId)&&/^\d+$/.test(plan.intervalDays||'')&&Number(plan.intervalDays)>=1&&validIso(planAnchor(plan));}
 export function newVisit(plan,iso){const v=newOperation('workOrders',plan.companyId);for(const k of ['name','customerId','siteId','equipmentId','owner','ownerId','priority','scope','materials','reportTemplate'])v[k]=plan[k]??v[k];return Object.assign(v,{id:visitId(plan.id,iso),type:'Orden de trabajo',status:'Planificada',planId:plan.id,dueDate:iso});}
+// Tras correr el calendario la ancla es la fecha de la visita ya realizada: esa fecha no genera otra visita.
+const doneAnchor=plan=>{try{const h=JSON.parse(plan.anchorHistory||'[]'),l=Array.isArray(h)?h[h.length-1]:null;return l&&l.to===plan.anchorDate?plan.anchorDate:'';}catch{return '';}};
 // Ventana [hoy, hoy+horizonte] inclusive; nunca fechas pasadas.
-export function ensureOccurrences(plan,visits,today,equipmentIds,horizon=PLANNER_HORIZON_DAYS){if(!isPlanActive(plan,equipmentIds))return [];const anchor=planAnchor(plan),n=Number(plan.intervalDays),diff=dayNum(today)-dayNum(anchor),first=diff<=0?anchor:addDays(anchor,Math.ceil(diff/n)*n),last=addDays(today,horizon),have=new Map(visits.filter(v=>v.planId===plan.id).map(v=>[v.id,v])),out=[];for(let d=first;d<=last;d=addDays(d,n)){const id=visitId(plan.id,d),ex=have.get(id);if(!ex)out.push(newVisit(plan,d));else if(ex.status==='Cancelada'&&ex.closedReason==='calendario corrido'&&ex.dueDate>=today)out.push({...ex,status:'Planificada',closedReason:''});}return out;}
+export function ensureOccurrences(plan,visits,today,equipmentIds,horizon=PLANNER_HORIZON_DAYS){if(!isPlanActive(plan,equipmentIds))return [];const anchor=planAnchor(plan),n=Number(plan.intervalDays),diff=dayNum(today)-dayNum(anchor),first=diff<=0?anchor:addDays(anchor,Math.ceil(diff/n)*n),last=addDays(today,horizon),have=new Map(visits.filter(v=>v.planId===plan.id).map(v=>[v.id,v])),skip=doneAnchor(plan),out=[];for(let d=first;d<=last;d=addDays(d,n)){if(d===skip)continue;const id=visitId(plan.id,d),ex=have.get(id);if(!ex)out.push(newVisit(plan,d));else if(ex.status==='Cancelada'&&ex.closedReason==='calendario corrido'&&ex.dueDate>=today)out.push({...ex,status:'Planificada',closedReason:''});}return out;}
 const CLOSED='calendario corrido',MAX_HISTORY=50;
 // Cancela (copias) las visitas futuras Planificada sin edición manual y devuelve las que faltan según la ancla actual.
 // Si una visita a cancelar coincide por id con una fecha nueva, se conserva (no se cancela ni se duplica).
@@ -29,3 +31,6 @@ export function shouldWriteCreate(stored,row){if(!stored)return 'write';if(store
 const PLAN_FIELDS=['name','ownerId','owner','scope','reportTemplate','anchorDate','dueDate','intervalDays','planState'];
 // true si el plan guardado cambió (o fue borrado) desde la copia con la que se construyó la edición, salvo que ya contenga los valores buscados.
 export function planConflict(stored,snapshot,intended){if(!stored||stored._sync?.deleted)return true;if(stored.updatedAt===snapshot?.updatedAt)return false;return !PLAN_FIELDS.every(k=>(stored[k]??'')===(intended[k]??''));}
+
+// Inicio de visita (puro): plantilla del informe y visita En curso. Si ya hay un informe vigente se reutiliza; si apunta a uno borrado o inexistente, hay que crear otro.
+export function startVisit(visit,reports,today){const reportKey=Object.hasOwn(templates,visit.reportTemplate)?visit.reportTemplate:'general',rep=visit.reportId?reports.find(r=>r.id===visit.reportId&&!r._sync?.deleted):null;return {reportKey,reportId:rep?rep.id:'',create:!rep,visit:{...visit,status:'En curso',reportId:rep?rep.id:''}};}

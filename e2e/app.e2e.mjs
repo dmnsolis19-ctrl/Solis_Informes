@@ -192,3 +192,85 @@ test('crear un plan para dos equipos desde el diálogo genera sus visitas', asyn
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+const until = async (page, fn, arg) => { for (let i = 0; i < 100; i++) { if (await page.evaluate(fn, arg)) return; await page.waitForTimeout(100); } throw new Error('Condición no cumplida a tiempo: ' + fn); };
+async function plannerFixture(page) {
+  await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {localDate} = await import('/js/domain.js');
+    const companyId = (await db.all('companies'))[0].id, today = localDate();
+    const customer = Object.assign(newCatalog('customers', companyId), {name: 'Cliente Visita'}); await db.saveEntity('customers', customer);
+    const site = Object.assign(newCatalog('sites', companyId), {name: 'Planta Visita', customerId: customer.id}); await db.saveEntity('sites', site);
+    const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Bomba Visita', tag: 'EQ-V', customerId: customer.id, siteId: site.id}); await db.saveEntity('equipment', asset);
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name: 'Plan visita', type: 'Plan de mantenimiento', customerId: customer.id, siteId: site.id, equipmentId: asset.id, anchorDate: today, dueDate: today, intervalDays: '30', status: 'Planificada', planState: 'Activo', scope: 'Revisar sellos', reportTemplate: 'general'}));
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('[data-planner-visit]').first().waitFor();
+}
+const visitRows = page => page.evaluate(async () => { const db = await import('/js/store.js'); return (await db.all('workOrders')).filter(r => r.planId).map(r => ({id: r.id, type: r.type, status: r.status, dueDate: r.dueDate, reportId: r.reportId, closedReason: r.closedReason})).sort((a, b) => a.dueDate < b.dueDate ? -1 : 1); });
+const gotoPlanner = async page => { await page.reload({waitUntil: 'networkidle'}); await page.locator('nav').getByText('Planner', {exact: true}).click(); };
+
+test('cerrar una visita atrasada corriendo el calendario', async () => {
+  const {context, page} = await newPage();
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  await plannerFixture(page);
+  const today = await page.evaluate(async () => (await import('/js/domain.js')).localDate());
+  const add = (d, n) => page.evaluate(async ([d, n]) => (await import('/js/planner.js')).addDays(d, n), [d, n]);
+  // La primera visita (hoy) pasa a estar programada hace 4 días.
+  await page.evaluate(async () => { const db = await import('/js/store.js'), {addDays} = await import('/js/planner.js'), {localDate} = await import('/js/domain.js'); const v = (await db.all('workOrders')).filter(r => r.planId).sort((a, b) => a.dueDate < b.dueDate ? -1 : 1)[0]; await db.saveEntity('workOrders', {...v, dueDate: addDays(localDate(), -4)}); });
+  await gotoPlanner(page);
+  const card = page.locator('[data-planner-visit]', {hasText: 'Plan visita'}).first();
+  await card.getByRole('button', {name: 'Iniciar visita'}).click();
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).some(r => r.planId && r.status === 'En curso' && r.reportId));
+  const started = await page.evaluate(async () => { const db = await import('/js/store.js'), v = (await db.all('workOrders')).find(r => r.status === 'En curso'), rep = (await db.all('reports')).filter(r => r.id === v.reportId); return {n: (await db.all('reports')).length, linked: rep.length, scope: rep[0]?.scope, template: rep[0]?.template, equipmentRef: rep[0]?.equipmentRef}; });
+  assert.equal(started.n, 1); assert.equal(started.linked, 1); assert.equal(started.scope, 'Revisar sellos'); assert.equal(started.template, 'general');
+  const done = await add(today, -1);
+  await gotoPlanner(page);
+  await page.locator('[data-planner-visit]', {hasText: 'Plan visita'}).first().getByRole('button', {name: 'Abrir informe'}).waitFor();
+  assert.equal(await page.evaluate(async () => (await (await import('/js/store.js')).all('reports')).length), 1);
+  await page.evaluate(async d => { const db = await import('/js/store.js'), r = (await db.all('reports'))[0]; await db.saveEntity('reports', {...r, status: 'Emitido', serviceDate: d}); }, done);
+  await gotoPlanner(page);
+  const dialog = page.getByRole('dialog', {name: 'Esta visita se hizo con retraso'});
+  await dialog.waitFor();
+  await dialog.getByText(/Informe .*programada para el .*realizada el/).waitFor();
+  assert.equal(await page.evaluate(() => document.activeElement.textContent), 'Mantener calendario');
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({state: 'detached'});
+  assert.equal((await visitRows(page)).filter(v => v.status === 'En curso').length, 1);
+  await gotoPlanner(page);
+  await dialog.waitFor();
+  await dialog.getByRole('button', {name: 'Correr calendario desde esta visita'}).click();
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).some(r => r.planId && r.status === 'Completada'));
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).filter(r => r.planId && r.status === 'Planificada').length === 3);
+  const rows = await visitRows(page), live = rows.filter(v => v.status === 'Planificada').map(v => v.dueDate);
+  assert.deepEqual(live, [await add(done, 30), await add(done, 60), await add(done, 90)]);
+  assert.equal(rows.filter(v => v.status === 'Completada').length, 1);
+  assert.deepEqual(rows.filter(v => v.status === 'Cancelada').map(v => [v.dueDate, v.closedReason]), [[await add(today, 30), 'calendario corrido'], [await add(today, 60), 'calendario corrido'], [await add(today, 90), 'calendario corrido']]);
+  assert.equal(new Set(rows.map(v => v.id)).size, rows.length);
+  const plan = await page.evaluate(async () => (await (await import('/js/store.js')).all('workOrders')).find(r => r.type === 'Plan de mantenimiento'));
+  assert.equal(plan.anchorDate, done); assert.equal(JSON.parse(plan.anchorHistory).length, 1);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('una visita hecha a tiempo se cierra sola y conserva el calendario', async () => {
+  const {context, page} = await newPage();
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  await plannerFixture(page);
+  const before = (await visitRows(page)).map(v => v.dueDate);
+  await page.locator('[data-planner-visit]').first().getByRole('button', {name: 'Iniciar visita'}).click();
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).some(r => r.planId && r.status === 'En curso' && r.reportId));
+  await gotoPlanner(page);
+  await page.evaluate(async () => { const db = await import('/js/store.js'), r = (await db.all('reports'))[0]; await db.saveEntity('reports', {...r, status: 'Emitido'}); });
+  await gotoPlanner(page);
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).some(r => r.planId && r.status === 'Completada'));
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  const rows = await visitRows(page);
+  assert.deepEqual(rows.map(v => v.dueDate), before);
+  assert.deepEqual(rows.map(v => v.status), ['Completada', 'Planificada', 'Planificada', 'Planificada']);
+  assert.equal(new Set(rows.map(v => v.id)).size, rows.length);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
