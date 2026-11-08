@@ -6,6 +6,13 @@ Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, prop
 
 Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
 
+## Novedades: Planner de mantenimiento (sin publicar)
+
+- **Planner:** nueva entrada del menú con las visitas por urgencia (vencidos, hoy, esta semana, próximos 30 días) y filtros por técnico, cliente y equipo.
+- **Planes con calendario fijo:** fecha ancla y periodicidad en días; las visitas se generan 90 días por adelantado y se inician como informe prellenado.
+- **Correr calendario:** si una visita se hizo con retraso, se puede mantener el calendario o correrlo desde la fecha real. «Órdenes y mantenimiento» conserva «Próxima intervención».
+- Detalle en [docs/USO_V3.md](docs/USO_V3.md#planner-de-mantenimiento).
+
 ## Novedades 3.6.0
 
 - **Plantillas nuevas (18 en total):** FAT y SAT de PLC/SCADA, planta de tratamiento de agua (PTAP), almacenamiento con baterías y gestión de energía, y tableros con termografía. Lecturas y criterios de aceptación siguen vacíos: los define el responsable.
