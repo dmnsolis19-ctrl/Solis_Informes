@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {newOperation,normalizeOperation} from '../public/js/operations.js';
+const NEW=['planId','anchorDate','planState','anchorHistory','manualEdit','closedReason','reportTemplate'];
+const plan=(o={})=>({...newOperation('workOrders','c1'),name:'Plan',type:'Plan de mantenimiento',anchorDate:'2026-01-15',planState:'Activo',intervalDays:'90',...o});
+test('newOperation trae los campos del plan vacíos',()=>{const w=newOperation('workOrders','c1');for(const k of NEW)assert.equal(w[k],'',k);assert.equal(newOperation('workOrders','c1').planState,'');});
+test('normalizeOperation acepta un plan válido',()=>{const o=normalizeOperation('workOrders',plan());assert.equal(o.anchorDate,'2026-01-15');assert.equal(o.planState,'Activo');assert.equal(o.intervalDays,'90');});
+test('normalizeOperation rechaza valores inválidos del plan',()=>{for(const p of [{anchorDate:'15/01/2026'},{planState:'Otro'},{manualEdit:'2'},{planId:'a b'},{reportTemplate:'no-existe'}])assert.throws(()=>normalizeOperation('workOrders',plan(p)),undefined,JSON.stringify(p));assert.equal(normalizeOperation('workOrders',plan({reportTemplate:'generator',manualEdit:'1',planId:'p_1'})).reportTemplate,'generator');});
+test('un plan activo sin fecha ancla ni programada se rechaza',()=>{assert.throws(()=>normalizeOperation('workOrders',plan({anchorDate:'',dueDate:''})),/Define la fecha ancla del plan\./);assert.doesNotThrow(()=>normalizeOperation('workOrders',plan({anchorDate:'',dueDate:'2026-02-01'})));assert.doesNotThrow(()=>normalizeOperation('workOrders',plan({anchorDate:'',dueDate:'',planState:''})));});
+test('anchorHistory admite 15000 caracteres',()=>{assert.equal(normalizeOperation('workOrders',plan({anchorHistory:'x'.repeat(15000)})).anchorHistory.length,15000);assert.throws(()=>normalizeOperation('workOrders',plan({anchorHistory:'x'.repeat(20001)})));});
