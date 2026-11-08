@@ -109,6 +109,22 @@ test('el resumen respeta empresas asignadas, ignora clientes y se puede desactiv
   env.DB.close();
 });
 
+test('el resumen marca visitas vencidas y omite los planes nuevos sin fecha programada', async () => {
+  const {env, company} = await setup();
+  const base = {companyId: company.id, status: 'Planificada', owner: ''};
+  const data = {reports: [], tasks: [], rules: [], shares: [], timeZone: 'America/Santiago', appUrl: '', appName: 'SOLIS Field', orders: [
+    {...base, id: 'v1', type: 'Orden de trabajo', name: 'Visita atrasada', dueDate: '2026-11-01'},
+    {...base, id: 'v2', type: 'Orden de trabajo', name: 'Visita de la semana', dueDate: '2026-11-05'},
+    {...base, id: 'p1', type: 'Plan de mantenimiento', name: 'Plan nuevo', dueDate: '', anchorDate: '2026-11-01', planState: 'Activo', intervalDays: '30'}]};
+  const digest = buildDigest({id: 'u', email: 'x@y.z', role: 'admin', companyIds: ['*']}, data, '2026-11-02', Date.UTC(2026, 10, 2));
+  assert.match(digest.text, /VENCIDA 2026-11-01 · Visita atrasada/);
+  assert.match(digest.text, /\n\s+• 2026-11-05 · Visita de la semana/);
+  assert.ok(!digest.text.includes('VENCIDA 2026-11-05'));
+  assert.ok(!digest.text.includes('Plan nuevo'));
+  assert.match(digest.text, /Órdenes y mantenimientos \(2\)/);
+  env.DB.close();
+});
+
 test('la tarea programada completa corre sin correo configurado y limpia sesiones', async () => {
   const {env} = await setup();
   const admin = (await env.DB.prepare('SELECT id FROM users').first()).id;
