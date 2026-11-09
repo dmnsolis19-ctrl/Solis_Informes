@@ -1,3 +1,13 @@
+# 3.9.0 · Carga por técnico y reasignar · 9 de noviembre de 2026
+
+- Vista «Carga» en el Planner (selector «Lista | Calendario | Carga», se recuerda en cada dispositivo): tabla de responsables por semanas con las visitas abiertas (Planificada o En curso). Columnas «Vencidas» y las 6 semanas que parten el lunes de la semana actual («Sem. 9 nov»); la intensidad de cada celda es relativa al máximo de la tabla y siempre muestra el número. Responsable por cuenta (correo) o nombre; sin ninguno, «Sin técnico». Respeta los filtros de técnico, cliente y equipo.
+- Al pulsar una celda (o «Vencidas») se listan debajo sus visitas con las mismas tarjetas y acciones que la lista. En móvil la tabla se desplaza dentro de su contenedor con la primera columna fija; la página no desborda.
+- «Reasignar» en cada visita Planificada (solo administrador, supervisor o modo local): elige una persona de la empresa, «Sin técnico» o escribe el responsable en modo local. La visita queda con edición manual (protegida de «Correr calendario» y de los cambios del plan). Si cambió en otro dispositivo o ya no está Planificada, avisa sin escribir; el botón se bloquea mientras guarda.
+- Pendiente cerrado: un técnico que abre un plan lo ve en solo lectura (campos deshabilitados, próxima visita e historial de anclas) en lugar del error «Tu rol no permite administrar planes»; en las tarjetas de planes ve «Ver plan» sin pausar ni cerrar.
+- Pendiente cerrado: al cerrar sesión se guarda el rol «none», de modo que un dispositivo compartido sin conexión ya no trata «sin sesión» como modo local del usuario anterior.
+- Sin migración D1, sin cambios en IndexedDB ni en la sincronización.
+- 236 pruebas automáticas superadas y 19 pruebas de navegador superadas.
+
 # 3.8.0 · Calendario del Planner y ajustes · 9 de noviembre de 2026
 
 - Vista de calendario en el Planner: cuadrícula mensual con la semana desde el lunes y los días de los meses vecinos atenuados. Cada día muestra hasta 3 visitas (nombre y TAG del equipo cuando caben) y «+N más»; las vencidas van en rojo, las en curso destacadas, las completadas en verde y las canceladas no se muestran. Respeta los filtros por técnico, cliente y equipo.

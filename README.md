@@ -1,10 +1,17 @@
-# SOLIS Field Pro 3.8.0
+# SOLIS Field Pro 3.9.0
 
 Plataforma para informes técnicos, diagnósticos, evaluaciones de terreno, propuestas y seguimiento de intervenciones. Conserva el trabajo local y sincroniza con Cloudflare al recuperar conexión, con la aplicación abierta.
 
-**Si ya está publicada, empieza por [ACTUALIZAR_v3.8.0.md](ACTUALIZAR_v3.8.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
+**Si ya está publicada, empieza por [ACTUALIZAR_v3.9.0.md](ACTUALIZAR_v3.9.0.md). Conserva tu `wrangler.jsonc` actual.** El ZIP de actualización lo excluye para proteger tu Worker y los identificadores de D1/R2.
 
 Para una instalación nueva, copia `wrangler.example.jsonc` como `wrangler.jsonc` y sigue [docs/GITHUB_CLOUDFLARE.md](docs/GITHUB_CLOUDFLARE.md).
+
+## Novedades 3.9.0
+
+- **Carga por técnico:** nueva vista «Carga» en el Planner con las visitas abiertas por responsable y por semana (más «Vencidas»); al elegir una celda se listan sus visitas.
+- **Reasignar:** los administradores y supervisores cambian el responsable de una visita planificada; la visita queda protegida de «Correr calendario».
+- **Pendientes cerrados:** los técnicos ven los planes en solo lectura y cerrar sesión ya no deja el dispositivo en modo local.
+- Sin migraciones ni cambios de sincronización.
 
 ## Novedades 3.8.0
 
