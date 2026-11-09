@@ -52,3 +52,7 @@ const weeks=[];for(let r=0;r<rows;r++){const week=[];for(let c=0;c<7;c++){const 
 return {year,month,weeks};}
 // Tono visual de una visita: vencida (abierta con fecha pasada), en curso, hecha o planificada.
 export function visitTone(visit,today){const open=visit.status==='Planificada'||visit.status==='En curso';if(open&&visit.dueDate<today)return 'overdue';if(visit.status==='En curso')return 'progress';if(visit.status==='Completada')return 'done';return 'planned';}
+// Datos de un plan para mostrarlo en solo lectura (técnicos).
+export function planReadonlyData(plan,visits,equipment,today,people=[]){const asset=equipment.find(x=>x.id===plan.equipmentId),state=plan.planState||'Activo',t=templates[plan.reportTemplate]||templates.general;let history=[];try{const h=JSON.parse(plan.anchorHistory||'[]');if(Array.isArray(h))history=h.filter(x=>x&&x.from&&x.to).map(x=>({from:x.from,to:x.to}));}catch{}
+const next=state==='Activo'?visits.filter(v=>v.planId===plan.id&&['Planificada','En curso'].includes(v.status)&&validIso(v.dueDate)&&v.dueDate>=today).map(v=>v.dueDate).sort()[0]||'':'';
+return {name:plan.name||'',equipment:asset?(asset.tag?asset.tag+' · ':'')+asset.name:'Equipo no disponible',anchorDate:planAnchor(plan)||'',intervalDays:String(plan.intervalDays||''),owner:people.find(p=>p.id===plan.ownerId)?.email||plan.owner||(plan.ownerId?'Técnico asignado':'Sin técnico'),template:t.shortLabel||t.label,scope:plan.scope||'',state,next,history};}
