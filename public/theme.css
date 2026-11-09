@@ -40,3 +40,6 @@
 @media print{:root{color-scheme:light!important}}
 @media screen{[data-theme=dark] .layout-position{background:#203f37;color:#9aebc9}}
 @media screen{[data-theme=dark] .template-favorite{background:var(--surface-soft);color:#e7c66e}[data-theme=dark] .template-favorite[aria-pressed=true]{background:#453c25;color:#f2d38d}[data-theme=dark] .command-result:hover{background:var(--surface-raised)}}
+:root[data-theme=dark]{--cal-planned-bg:#2a3d4c;--cal-planned-fg:#d1e3ef;--cal-progress-bg:#147c68;--cal-progress-fg:#fff;--cal-done-bg:#203f37;--cal-done-fg:#9aebc9;--cal-overdue-bg:#4a2a2d;--cal-overdue-fg:#ffc2c2;--cal-cell:var(--surface);--cal-cell-outside:var(--surface-soft)}
+[data-theme=dark] .seg{background:var(--surface-soft);border-color:var(--line)}[data-theme=dark] .seg button{color:var(--text)}[data-theme=dark] .seg button+button{border-color:var(--line)}[data-theme=dark] .seg button[aria-pressed=true]{background:#147c68;color:#fff}
+[data-theme=dark] .cal-day.today .cal-num{background:var(--teal);color:#0d2230}

@@ -291,3 +291,125 @@ test('doble clic en Iniciar visita crea un solo informe', async () => {
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+// Calendario del Planner: un plan lejano (no genera visitas) y visitas sembradas en fechas conocidas.
+const MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+async function calendarFixture(page) {
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  const dates = await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {addDays} = await import('/js/planner.js'), {localDate} = await import('/js/domain.js');
+    const companyId = (await db.all('companies'))[0].id, today = localDate(), now = new Date(), pad = n => String(n).padStart(2, '0');
+    const last = localDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)), next = localDate(new Date(now.getFullYear(), now.getMonth() + 1, 15));
+    const customer = Object.assign(newCatalog('customers', companyId), {name: 'Cliente Calendario'}); await db.saveEntity('customers', customer);
+    const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Calendario', tag: 'EQ-CAL', customerId: customer.id}); await db.saveEntity('equipment', asset);
+    const plan = Object.assign(newCatalog('workOrders', companyId), {name: 'Plan lejano', type: 'Plan de mantenimiento', customerId: customer.id, equipmentId: asset.id, anchorDate: addDays(today, 400), dueDate: addDays(today, 400), intervalDays: '30', status: 'Planificada', planState: 'Activo'});
+    await db.saveEntity('workOrders', plan);
+    const visit = (name, dueDate, extra = {}) => db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name, type: 'Orden de trabajo', planId: plan.id, customerId: customer.id, equipmentId: asset.id, dueDate, status: 'Planificada', priority: 'Media'}, extra));
+    await visit('Visita A', today); await visit('Visita B', today, {priority: 'Alta'}); await visit('Visita fin de mes', last); await visit('Visita mes siguiente', next);
+    await visit('Visita cancelada', today, {status: 'Cancelada'});
+    return {today, last, next, year: now.getFullYear(), month: now.getMonth() + 1, pad: pad(now.getMonth() + 1)};
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  return dates;
+}
+const monthTitle = (year, month) => `${MONTH_NAMES[month - 1]} de ${year}`;
+
+test('el Planner alterna Lista y Calendario y recuerda la elección tras recargar', async () => {
+  const {context, page} = await newPage();
+  const d = await calendarFixture(page);
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  const pressed = name => page.getByRole('button', {name, exact: true}).getAttribute('aria-pressed');
+  await page.locator('[data-planner-visit]').first().waitFor();
+  assert.equal(await pressed('Lista'), 'true'); assert.equal(await pressed('Calendario'), 'false');
+  assert.equal(await page.locator('.cal-grid').count(), 0);
+  await page.getByRole('button', {name: 'Calendario', exact: true}).click();
+  await page.locator('.cal-grid').waitFor();
+  assert.equal(await pressed('Calendario'), 'true');
+  assert.equal(await page.locator('.cal-day').count() % 7, 0);
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.cal-grid').waitFor();
+  assert.equal(await pressed('Calendario'), 'true');
+  await page.getByRole('button', {name: 'Lista', exact: true}).click();
+  await page.locator('.planner-section h2:text-is("Hoy")').waitFor();
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('[data-planner-visit]').first().waitFor();
+  assert.equal(await pressed('Lista'), 'true'); assert.equal(await page.locator('.cal-grid').count(), 0);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('el calendario muestra cada visita en su día, cambia de mes y lista las visitas del día elegido', async () => {
+  const {context, page} = await newPage();
+  const d = await calendarFixture(page);
+  await page.evaluate(() => localStorage.setItem('solis.plannerView', 'calendar'));
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.cal-grid').waitFor();
+  const day = iso => page.locator(`.cal-day[data-date="${iso}"]`);
+  await page.getByRole('heading', {name: monthTitle(d.year, d.month), level: 3}).waitFor();
+  assert.equal(await page.locator('.cal-day:not(.outside)').count() >= 28, true);
+  // Hoy: dos visitas (la cancelada no cuenta), con la de prioridad Alta primero; hoy viene seleccionado.
+  await day(d.today).locator('.cal-chip', {hasText: 'Visita B'}).waitFor();
+  assert.equal(await day(d.today).locator('.cal-chip').count() >= 2, true);
+  assert.equal(await day(d.today).locator('.cal-chip', {hasText: 'Visita cancelada'}).count(), 0);
+  assert.equal(await day(d.today).locator('.cal-chip-name').first().textContent(), 'Visita B');
+  assert.match(await day(d.today).getAttribute('aria-label'), /\d+ de \w+ de \d{4}, (2|3) visitas, hoy/);
+  assert.equal(await day(d.today).getAttribute('aria-pressed'), 'true');
+  await day(d.last).locator('.cal-chip', {hasText: 'Visita fin de mes'}).waitFor();
+  assert.equal(await page.locator('.cal-day:not(.outside)', {hasText: 'Visita mes siguiente'}).count(), 0);
+  assert.equal(await page.locator('[data-planner-visit]', {hasText: 'Visita B'}).count(), 1);
+  // Mes siguiente: aparece la visita del 15, vuelve al mes actual con Hoy.
+  await page.getByRole('button', {name: 'Mes siguiente'}).click();
+  const next = new Date(d.year, d.month, 1);
+  await page.getByRole('heading', {name: monthTitle(next.getFullYear(), next.getMonth() + 1), level: 3}).waitFor();
+  await day(d.next).locator('.cal-chip', {hasText: 'Visita mes siguiente'}).waitFor();
+  assert.equal(await page.locator('[data-planner-visit]').count(), 0);
+  await day(d.next).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita mes siguiente'}).waitFor();
+  assert.equal(await day(d.next).getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('[data-planner-visit]').count(), 1);
+  await page.locator('[data-planner-visit]').getByRole('button', {name: 'Iniciar visita'}).waitFor();
+  await page.locator('[data-planner-visit]').getByRole('button', {name: 'Abrir / editar'}).waitFor();
+  await page.getByRole('button', {name: 'Mes anterior'}).click();
+  await page.getByRole('heading', {name: monthTitle(d.year, d.month), level: 3}).waitFor();
+  await page.getByRole('button', {name: 'Mes anterior'}).click();
+  const prev = new Date(d.year, d.month - 2, 1);
+  await page.getByRole('heading', {name: monthTitle(prev.getFullYear(), prev.getMonth() + 1), level: 3}).waitFor();
+  assert.equal(await page.locator('.cal-chip').count(), 0);
+  await page.getByText('Elige un día para ver sus visitas.').waitFor();
+  await page.getByRole('button', {name: 'Hoy', exact: true}).click();
+  await page.getByRole('heading', {name: monthTitle(d.year, d.month), level: 3}).waitFor();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita B'}).waitFor();
+  assert.equal(await page.locator('[data-planner-visit]', {hasText: 'Visita fin de mes'}).count(), d.today === d.last ? 1 : 0);
+  // Navegación con teclado: el día es un botón y Enter lo selecciona.
+  await day(d.last).focus(); await page.keyboard.press('Enter');
+  await page.locator('[data-planner-visit]', {hasText: 'Visita fin de mes'}).waitFor();
+  assert.equal(await day(d.last).getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('el calendario del Planner no desborda a 375 px y muestra un contador por día', async () => {
+  const {context, page} = await newPage({hasTouch: true});
+  const d = await calendarFixture(page);
+  await page.setViewportSize({width: 375, height: 800});
+  await page.evaluate(() => localStorage.setItem('solis.plannerView', 'calendar'));
+  await page.reload({waitUntil: 'networkidle'});
+  await page.click('[data-action=menu]');
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.cal-grid').waitFor();
+  const today = page.locator(`.cal-day[data-date="${d.today}"]`);
+  assert.equal(await today.locator('.cal-chips').isVisible(), false);
+  assert.match(await today.locator('.cal-count').textContent(), /^[23]$/);
+  const box = await today.boundingBox();
+  assert.ok(box.height >= 40 && box.width >= 40, 'el día es un objetivo táctil de al menos 40 px: ' + JSON.stringify(box));
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A'}).waitFor();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
