@@ -1,4 +1,4 @@
-# Sin publicar · Planner de mantenimiento · 8 de noviembre de 2026
+# 3.7.0 · Planner de mantenimiento · 9 de noviembre de 2026
 
 - Entrada «Planner» en el menú, antes de «Órdenes y mantenimiento»: visitas por urgencia en «Vencidos», «Hoy», «Esta semana» y «Próximos 30 días», con filtros por técnico, cliente y equipo, marca «Sin técnico» y aviso de planes en pausa.
 - Planes de mantenimiento (órdenes de tipo «Plan de mantenimiento») con fecha ancla y periodicidad en días de calendario fijo, técnico por defecto, plantilla de informe y alcance. Un plan por equipo al aplicarlo a varios; se admiten varios planes por equipo. Acciones: crear, editar, pausar, reanudar y cerrar (un plan cerrado no se reabre). Al cerrar un plan se cancelan sus visitas futuras Planificadas sin edición manual (motivo «plan cerrado»; nunca se borran; En curso, Completadas, con edición manual y pasadas no se tocan); si una visita cambió en otro dispositivo se omite y se avisa.
