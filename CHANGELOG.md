@@ -1,3 +1,14 @@
+# 3.8.0 · Calendario del Planner y ajustes · 9 de noviembre de 2026
+
+- Vista de calendario en el Planner: cuadrícula mensual con la semana desde el lunes y los días de los meses vecinos atenuados. Cada día muestra hasta 3 visitas (nombre y TAG del equipo cuando caben) y «+N más»; las vencidas van en rojo, las en curso destacadas, las completadas en verde y las canceladas no se muestran. Respeta los filtros por técnico, cliente y equipo.
+- Selector «Lista | Calendario» en la cabecera del Planner; la elección se recuerda en cada dispositivo (si el navegador no guarda datos, igual funciona y parte en Lista).
+- Navegación por mes con «Mes anterior», «Mes siguiente» y «Hoy»; se puede ir a cualquier mes (los meses sin visitas se ven vacíos).
+- Al pulsar un día se listan debajo todas sus visitas con las mismas tarjetas y acciones que la lista («Iniciar visita», «Abrir informe», «Abrir / editar»). Por defecto queda seleccionado hoy. Cada día es un botón con etiqueta accesible («9 de noviembre de 2026, 2 visitas») y se maneja con teclado.
+- En móvil (hasta 600 px) las etiquetas se reemplazan por un contador por día y el detalle está en la lista del día elegido; sin desplazamiento horizontal.
+- Corrección del diálogo «Crear plan»: los cuadros de selección de equipos salían enormes porque heredaban el estilo de los campos de texto; ahora miden 20 px y quedan junto a su nombre. La lista de equipos se ordena por TAG.
+- Sin migración D1, sin cambios en IndexedDB ni en la sincronización: el calendario es otra vista de las mismas visitas y no cambia cuándo se generan o cierran.
+- 217 pruebas automáticas superadas y 13 pruebas de navegador superadas.
+
 # 3.7.0 · Planner de mantenimiento · 9 de noviembre de 2026
 
 - Entrada «Planner» en el menú, antes de «Órdenes y mantenimiento»: visitas por urgencia en «Vencidos», «Hoy», «Esta semana» y «Próximos 30 días», con filtros por técnico, cliente y equipo, marca «Sin técnico» y aviso de planes en pausa.

@@ -39,3 +39,48 @@
 .dictate-btn{margin-top:6px;justify-self:start;border:1px solid var(--line,#d5dde2);background:#fff;color:#0e7a66;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}.dictate-btn.active{background:#c62828;border-color:#c62828;color:#fff}.dictate-btn[disabled]{opacity:.5;cursor:not-allowed}.photo-options{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 12px;font-size:13px}.photo-options .check{display:flex;gap:6px;align-items:center}[data-theme="dark"] .dictate-btn{background:#16222d;color:#5ed5b3}
 
 [hidden]{display:none!important}
+
+/* Cuadros de selección dentro de un grupo .field (p. ej. «Equipos del plan»): no heredan el estilo de campo de texto. */
+.field.evidence-links{margin-top:0}
+.field.evidence-links label{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer}
+.field.evidence-links input[type=checkbox]{width:20px;height:20px;min-height:0;min-width:20px;flex:none;padding:0;margin:0;border-radius:4px}
+/* Planner · vista de calendario mensual */
+:root{--cal-planned-bg:#eaf0f4;--cal-planned-fg:#2b4a5c;--cal-progress-bg:#0b7664;--cal-progress-fg:#fff;--cal-done-bg:#e1f3e5;--cal-done-fg:#1d6a36;--cal-overdue-bg:#fbe7e7;--cal-overdue-fg:#8f2f2f;--cal-cell:#fff;--cal-cell-outside:#f6f8f9}
+.planner-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 18px}
+.seg{display:inline-flex;border:1px solid #d9e3e8;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:transparent;min-height:40px;padding:8px 18px;font-size:12px;font-weight:650;color:#345265}
+.seg button+button{border-left:1px solid #d9e3e8}
+.seg button[aria-pressed=true]{background:var(--teal);color:#fff}
+.cal-nav{display:flex;align-items:center;gap:8px;margin:0 0 12px}
+.cal-nav .btn{min-width:40px;min-height:40px}
+.cal-title{flex:1;margin:0;font-size:18px;text-align:center}.cal-title::first-letter{text-transform:uppercase}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.cal-dow{background:var(--cal-cell-outside);padding:8px 4px;text-align:center;font-size:11px;font-weight:650;text-transform:uppercase;color:var(--muted)}
+.cal-day{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:0;min-height:108px;padding:6px;border:0;border-radius:0;background:var(--cal-cell);color:var(--text);text-align:left;font-size:11px}
+.cal-day:hover{background:var(--cal-cell-outside)}
+.cal-day.outside{background:var(--cal-cell-outside)}
+.cal-day.outside .cal-num,.cal-day.outside .cal-chips{opacity:.55}
+.cal-day[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--teal)}
+.cal-day:focus-visible{outline-offset:-3px}
+.cal-num{align-self:flex-start;min-width:24px;height:24px;display:inline-grid;place-items:center;border-radius:12px;font-size:12px;font-weight:650}
+.cal-day.today .cal-num{background:var(--navy);color:#fff}
+.cal-chips{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-chip{display:flex;gap:4px;align-items:center;min-width:0;padding:2px 6px;border-radius:4px;font-size:11px;line-height:1.35;background:var(--cal-planned-bg);color:var(--cal-planned-fg)}
+.cal-chip-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-chip-tag{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;opacity:.85}
+.cal-chip.tone-progress{background:var(--cal-progress-bg);color:var(--cal-progress-fg)}
+.cal-chip.tone-done{background:var(--cal-done-bg);color:var(--cal-done-fg)}
+.cal-chip.tone-overdue{background:var(--cal-overdue-bg);color:var(--cal-overdue-fg)}
+.cal-more{padding:0 6px;font-size:11px;font-weight:650;color:var(--muted)}
+.cal-count{display:none}
+@media(max-width:1100px){.cal-chip-tag{display:none}}
+@media(max-width:600px){
+.cal-day{min-height:52px;align-items:center;justify-content:flex-start;gap:2px;padding:4px 2px}
+.cal-num{align-self:center}
+.cal-chips{display:none}
+.cal-count{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:9px;background:var(--cal-progress-bg);color:#fff;font-size:11px;font-weight:700}
+.cal-dow{font-size:10px;padding:6px 0}
+.cal-title{font-size:16px}
+.cal-nav .btn{min-width:44px}
+.seg{display:flex;width:100%}.seg button{flex:1}
+}

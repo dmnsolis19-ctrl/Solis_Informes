@@ -41,3 +41,14 @@ export function planConflict(stored,snapshot,intended){if(!stored||stored._sync?
 
 // Inicio de visita (puro): plantilla del informe y visita En curso. Si ya hay un informe vigente se reutiliza; si apunta a uno borrado o inexistente, hay que crear otro.
 export function startVisit(visit,reports,today){const reportKey=Object.hasOwn(templates,visit.reportTemplate)?visit.reportTemplate:'general',rep=visit.reportId?reports.find(r=>r.id===visit.reportId&&!r._sync?.deleted):null;return {reportKey,reportId:rep?rep.id:'',create:!rep,visit:{...visit,status:'En curso',reportId:rep?rep.id:''}};}
+
+// Calendario mensual (puro). month es 1-12; semanas de lunes a domingo; aritmética en UTC sobre cadenas 'AAAA-MM-DD' (sin zona horaria del dispositivo).
+const isoOf=ms=>new Date(ms).toISOString().slice(0,10);
+export function shiftMonth(year,month,delta){const i=year*12+(month-1)+delta;return {year:Math.floor(i/12),month:i-Math.floor(i/12)*12+1};}
+export function monthGrid(visits,year,month,today,filters={}){const first=Date.UTC(year,month-1,1)/864e5,lead=(new Date(first*864e5).getUTCDay()+6)%7,days=Date.UTC(year,month,1)/864e5-first,rows=Math.ceil((lead+days)/7),f=['ownerId','customerId','equipmentId'].filter(k=>filters[k]),byDay=new Map();
+for(const v of visits){if(v.type==='Plan de mantenimiento'||v.status==='Cancelada'||!validIso(v.dueDate)||f.some(k=>v[k]!==filters[k]))continue;(byDay.get(v.dueDate)||byDay.set(v.dueDate,[]).get(v.dueDate)).push(v);}
+for(const list of byDay.values())list.sort((a,b)=>(PRIO[a.priority]??4)-(PRIO[b.priority]??4)||String(a.name||'').localeCompare(String(b.name||''),'es',{numeric:true,sensitivity:'base'}));
+const weeks=[];for(let r=0;r<rows;r++){const week=[];for(let c=0;c<7;c++){const n=first-lead+r*7+c,date=isoOf(n*864e5);week.push({date,inMonth:n>=first&&n<first+days,isToday:date===today,visits:byDay.get(date)?[...byDay.get(date)]:[]});}weeks.push(week);}
+return {year,month,weeks};}
+// Tono visual de una visita: vencida (abierta con fecha pasada), en curso, hecha o planificada.
+export function visitTone(visit,today){const open=visit.status==='Planificada'||visit.status==='En curso';if(open&&visit.dueDate<today)return 'overdue';if(visit.status==='En curso')return 'progress';if(visit.status==='Completada')return 'done';return 'planned';}

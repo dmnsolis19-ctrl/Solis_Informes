@@ -1,13 +1,13 @@
-SOLIS FIELD PRO 3.7.0
+SOLIS FIELD PRO 3.8.0
 
-Base: repositorio 3.6.0.
-Incluye el Planner de mantenimiento: planes con calendario fijo, visitas
-por urgencia, inicio de visita con informe prellenado y cierre que puede
-mantener o correr el calendario. Sin migraciones nuevas.
+Base: repositorio 3.7.0.
+Agrega la vista de calendario mensual al Planner (selector Lista/Calendario,
+navegación por mes y lista de visitas del día) y corrige los cuadros de
+selección del diálogo «Crear plan». Sin migraciones nuevas.
 
 1. Descarga un respaldo de la aplicación actual.
-2. Sigue ACTUALIZAR_v3.7.0.md.
+2. Sigue ACTUALIZAR_v3.8.0.md.
 3. Copia el contenido a la raíz de tu repositorio (conserva tu wrangler.jsonc).
 4. Build: node scripts/ci.mjs
    Deploy: node scripts/deploy.mjs
-5. Comprueba Field Pro v3.7.0 y actualiza todos los dispositivos.
+5. Comprueba Field Pro v3.8.0 y actualiza todos los dispositivos.
