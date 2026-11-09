@@ -116,7 +116,7 @@ Los recorridos de gráficos y CSV, verificación pública, fotografías con hora
 2. Define la fecha ancla, que es la fecha de la primera visita, y la periodicidad en días. El calendario es fijo: las visitas caen en ancla + n × días, sin importar cuándo se hicieron las anteriores.
 3. Opcionalmente indica técnico por defecto, plantilla de informe y alcance.
 
-Cada plan permite editar, «Pausar», «Reanudar» y «Cerrar plan». Un plan cerrado no se reabre. Editar la ancla o la periodicidad de un plan activo regenera las visitas futuras; reanudar uno pausado las reconcilia.
+Cada plan permite editar, «Pausar», «Reanudar» y «Cerrar plan». Al cerrar un plan se cancelan sus visitas futuras en estado Planificada (con motivo «plan cerrado»); no se tocan las visitas con edición manual, En curso, Completadas ni las de fechas pasadas, y nunca se borran. Un plan cerrado no se reabre. Editar la ancla o la periodicidad de un plan activo regenera las visitas futuras; reanudar uno pausado las reconcilia.
 
 ### Ciclo de una visita
 

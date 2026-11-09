@@ -1,7 +1,7 @@
 import {escapeHtml as e,fmtDate,localDate,templates} from './domain.js';
 import {syncState,api,synchronize} from './sync.js';
 import {normalizeOperation,isPlannerPlan} from './operations.js';
-import {urgencyBuckets,ensureOccurrences,plansFromForm,regeneratePlan,shouldWriteCancel,shouldWriteCreate,planConflict,refreshVisitFromPlan,validIso,startVisit,closeVisit,visitsToClose,isLate} from './planner.js';
+import {urgencyBuckets,ensureOccurrences,plansFromForm,regeneratePlan,cancelFutureVisits,shouldWriteCancel,shouldWriteCreate,planConflict,refreshVisitFromPlan,validIso,startVisit,closeVisit,visitsToClose,isLate} from './planner.js';
 const scoped=(state,key)=>(state[key]||[]).filter(x=>x.companyId===state.companyId);
 const option=(value,label,selected)=>`<option value="${e(value)}" ${String(value)===String(selected)?'selected':''}>${e(label)}</option>`;
 const isPlan=r=>r.type==='Plan de mantenimiento';
@@ -58,7 +58,7 @@ const v=formValues(form);
 if(!editId){const rows=plansFromForm(v,scopedEq(state),state.companyId,dialogIds);await persistRows(ctx,rows,'create');ctx.closeModal();await refresh(ctx,rows.length===1?'Plan creado.':rows.length+' planes creados.');return;}
 const old=state.workOrders.find(r=>r.id===editId&&r.companyId===state.companyId);if(!old)throw new Error('No encontramos el plan. Cierra esta ventana y vuelve a abrirlo.');const g=plansFromForm({...v,equipmentIds:[old.equipmentId]},scopedEq(state),state.companyId)[0],updated=normalizeOperation('workOrders',{...old,name:g.name,ownerId:g.ownerId,owner:g.owner,scope:g.scope,reportTemplate:g.reportTemplate,anchorDate:g.anchorDate,dueDate:g.anchorDate,intervalDays:g.intervalDays}),plan={...updated,_sync:old._sync};const skipped=await reconcile(ctx,plan,old);ctx.closeModal();await refresh(ctx,'Plan guardado.'+skipped);}
 const scopedEq=state=>scoped(state,'equipment');
-async function setPlanState(ctx,id,planState,msg){await assertCanManage(ctx);const old=ctx.state.workOrders.find(r=>r.id===id&&r.companyId===ctx.state.companyId&&r.type==='Plan de mantenimiento');if(!old)throw new Error('No encontramos el plan. Actualiza la pantalla e inténtalo de nuevo.');const next={...normalizeOperation('workOrders',{...old,planState}),_sync:old._sync};let skipped='';if(planState==='Activo')skipped=await reconcile(ctx,next,old);else await writePlan(ctx,next,old);await refresh(ctx,msg+skipped);}
+async function setPlanState(ctx,id,planState,msg){await assertCanManage(ctx);const old=ctx.state.workOrders.find(r=>r.id===id&&r.companyId===ctx.state.companyId&&r.type==='Plan de mantenimiento');if(!old)throw new Error('No encontramos el plan. Actualiza la pantalla e inténtalo de nuevo.');const next={...normalizeOperation('workOrders',{...old,planState}),_sync:old._sync};let skipped='';if(planState==='Activo')skipped=await reconcile(ctx,next,old);else if(planState==='Cerrado'){await checkPlan(ctx,next,old);const n=await persistRows(ctx,cancelFutureVisits(next,plannerVisits(ctx.state),localDate()),'cancel');await writePlan(ctx,next,old);skipped=skippedNote(n);}else await writePlan(ctx,next,old);await refresh(ctx,msg+skipped);}
 const findVisit=(ctx,id)=>ctx.state.workOrders.find(r=>r.id===id&&r.companyId===ctx.state.companyId&&r.planId&&!isPlan(r));
 // Inicia la visita: primero existe el informe, después la visita lo apunta (un fallo nunca deja una visita con informe inexistente).
 // Guarda de reentrada por visita: devuelve false si ya hay un inicio en curso para ese id.
@@ -100,5 +100,5 @@ if(a==='planner-plan-edit'){const p=ctx.state.workOrders.find(r=>r.id===button.d
 if(a==='planner-plan-save'){await savePlan(ctx);return true;}
 if(a==='planner-plan-pause'){await setPlanState(ctx,button.dataset.id,'Pausado','Plan pausado.');return true;}
 if(a==='planner-plan-resume'){await setPlanState(ctx,button.dataset.id,'Activo','Plan reanudado.');return true;}
-if(a==='planner-plan-close'){if(confirm('¿Cerrar este plan? Dejará de generar visitas; las ya creadas se conservan.'))await setPlanState(ctx,button.dataset.id,'Cerrado','Plan cerrado.');return true;}
+if(a==='planner-plan-close'){if(confirm('¿Cerrar este plan? Dejará de generar visitas y se cancelarán sus visitas planificadas futuras (las que tengan edición manual, estén en curso o ya se hayan hecho se conservan).'))await setPlanState(ctx,button.dataset.id,'Cerrado','Plan cerrado.');return true;}
 return false;}

@@ -150,3 +150,14 @@ test('claimStart: el segundo inicio de la misma visita se ignora hasta liberarla
   assert.equal(claimStart(set,'v1'),true);assert.equal(claimStart(set,'v1'),false);assert.equal(claimStart(set,'v2'),true);
   set.delete('v1');assert.equal(claimStart(set,'v1'),true);
 });
+
+import {cancelFutureVisits} from '../public/js/planner.js';
+test('cancelFutureVisits: cancela futuras Planificada sin manualEdit; respeta el resto; idempotente',()=>{
+  const p=gp({anchorDate:'2026-03-10'}),a=vis(p,'2026-03-31'),b=vis(p,'2026-04-30',{manualEdit:'1'}),c=vis(p,'2026-05-30',{status:'En curso'}),d=vis(p,'2026-06-30',{status:'Completada'}),e=vis(p,'2026-02-01'),f=vis(p,'2026-07-30',{status:'Cancelada'}),o=vis(gp({id:'p2'}),'2026-04-01'),h=vis(p,'2026-03-10');
+  const r=cancelFutureVisits(p,[a,b,c,d,e,f,o,h],'2026-03-10');
+  assert.deepEqual(r.map(x=>x.id).sort(),[a.id,h.id].sort());
+  assert.ok(r.every(x=>x.status==='Cancelada'&&x.closedReason==='plan cerrado'));
+  assert.equal(a.status,'Planificada');
+  assert.deepEqual(cancelFutureVisits(p,r,'2026-03-10'),[]);
+  assert.equal(shouldWriteCancel({status:'Cancelada',closedReason:'plan cerrado'}),'done');
+});
