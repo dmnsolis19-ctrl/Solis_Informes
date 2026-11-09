@@ -1,0 +1,163 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {newOperation,normalizeOperation} from '../public/js/operations.js';
+const NEW=['planId','anchorDate','planState','anchorHistory','manualEdit','closedReason','reportTemplate'];
+const plan=(o={})=>({...newOperation('workOrders','c1'),name:'Plan',type:'Plan de mantenimiento',anchorDate:'2026-01-15',planState:'Activo',intervalDays:'90',...o});
+test('newOperation trae los campos del plan vacíos',()=>{const w=newOperation('workOrders','c1');for(const k of NEW)assert.equal(w[k],'',k);assert.equal(newOperation('workOrders','c1').planState,'');});
+test('normalizeOperation acepta un plan válido',()=>{const o=normalizeOperation('workOrders',plan());assert.equal(o.anchorDate,'2026-01-15');assert.equal(o.planState,'Activo');assert.equal(o.intervalDays,'90');});
+test('normalizeOperation rechaza valores inválidos del plan',()=>{for(const p of [{anchorDate:'15/01/2026'},{planState:'Otro'},{manualEdit:'2'},{planId:'a b'},{reportTemplate:'no-existe'}])assert.throws(()=>normalizeOperation('workOrders',plan(p)),undefined,JSON.stringify(p));assert.equal(normalizeOperation('workOrders',plan({reportTemplate:'generator',manualEdit:'1',planId:'p_1'})).reportTemplate,'generator');});
+test('un plan activo sin fecha ancla ni programada se rechaza',()=>{assert.throws(()=>normalizeOperation('workOrders',plan({anchorDate:'',dueDate:''})),/Define la fecha ancla del plan\./);assert.doesNotThrow(()=>normalizeOperation('workOrders',plan({anchorDate:'',dueDate:'2026-02-01'})));assert.doesNotThrow(()=>normalizeOperation('workOrders',plan({anchorDate:'',dueDate:'',planState:''})));});
+test('anchorHistory admite 15000 caracteres',()=>{assert.equal(normalizeOperation('workOrders',plan({anchorHistory:'x'.repeat(15000)})).anchorHistory.length,15000);assert.throws(()=>normalizeOperation('workOrders',plan({anchorHistory:'x'.repeat(20001)})));});
+import {PLANNER_HORIZON_DAYS,addDays,visitId,planAnchor,isPlanActive,newVisit,ensureOccurrences} from '../public/js/planner.js';
+const eq=new Set(['e1']);
+const gp=(o={})=>plan({id:'p1',anchorDate:'2026-01-01',intervalDays:'30',equipmentId:'e1',...o});
+test('addDays suma, resta y cruza fin de año',()=>{assert.equal(addDays('2026-03-01',-1),'2026-02-28');assert.equal(addDays('2026-12-31',1),'2027-01-01');assert.equal(addDays('2026-01-01',-1),'2025-12-31');assert.equal(PLANNER_HORIZON_DAYS,90);});
+test('visitId y planAnchor',()=>{assert.equal(visitId('p1','2026-03-02'),'visit-p1-20260302');assert.equal(visitId('x'.repeat(150),'2026-03-02').length,100);assert.equal(planAnchor({anchorDate:'',dueDate:'2026-02-20'}),'2026-02-20');assert.equal(planAnchor({anchorDate:'2026-01-01',dueDate:'2026-02-20'}),'2026-01-01');});
+test('isPlanActive valida estado, equipo, intervalo y ancla',()=>{assert.equal(isPlanActive(gp(),eq),true);assert.equal(isPlanActive(gp({planState:''}),eq),true);for(const p of [{planState:'Pausado'},{planState:'Cerrado'},{status:'Cancelada'},{equipmentId:'zz'},{intervalDays:''},{intervalDays:'0'},{intervalDays:'1.5'},{anchorDate:'',dueDate:''}])assert.equal(isPlanActive(gp(p),eq),false,JSON.stringify(p));});
+test('ensureOccurrences genera fechas desde la primera ocurrencia >= hoy',()=>{const v=ensureOccurrences(gp(),[],'2026-02-15',eq);assert.deepEqual(v.map(x=>x.dueDate),['2026-03-02','2026-04-01','2026-05-01']);assert.equal(v[0].id,'visit-p1-20260302');});
+test('ensureOccurrences es idempotente aunque haya visitas Canceladas o Completadas',()=>{const v=ensureOccurrences(gp(),[],'2026-02-15',eq);const ex=v.map((x,i)=>i===1?{...x,status:'Cancelada'}:i===2?{...x,status:'Completada'}:x);assert.deepEqual(ensureOccurrences(gp(),ex,'2026-02-15',eq),[]);assert.equal(ensureOccurrences(gp(),ex.slice(0,2),'2026-02-15',eq).length,1);});
+test('ancla antigua no genera fechas pasadas ni muchos registros',()=>{const v=ensureOccurrences(gp({anchorDate:'2020-01-01',intervalDays:'7'}),[],'2026-02-15',eq);assert.ok(v.length>0&&v.length<=14);assert.ok(v.every(x=>x.dueDate>='2026-02-15'));});
+test('ancla futura y ancla igual a hoy',()=>{assert.equal(ensureOccurrences(gp({anchorDate:'2026-02-15'}),[],'2026-02-15',eq)[0].dueDate,'2026-02-15');assert.equal(ensureOccurrences(gp({anchorDate:'2026-03-01'}),[],'2026-02-15',eq)[0].dueDate,'2026-03-01');});
+test('planes inactivos o inválidos no generan visitas',()=>{for(const p of [{planState:'Pausado'},{planState:'Cerrado'},{equipmentId:'zz'},{intervalDays:''},{intervalDays:'0'},{intervalDays:'1.5'}])assert.deepEqual(ensureOccurrences(gp(p),[],'2026-02-15',eq),[],JSON.stringify(p));});
+test('plan legacy usa dueDate como ancla',()=>{const v=ensureOccurrences(gp({anchorDate:'',dueDate:'2026-02-20',planState:''}),[],'2026-02-15',eq);assert.equal(v[0].dueDate,'2026-02-20');});
+test('newVisit copia los campos del plan',()=>{const p=gp({customerId:'c',siteId:'s',owner:'Ana',ownerId:'u',priority:'Alta',scope:'a',materials:'m',reportTemplate:'generator'});const v=newVisit(p,'2026-03-02');assert.deepEqual([v.type,v.status,v.planId,v.dueDate,v.name,v.customerId,v.siteId,v.equipmentId,v.owner,v.ownerId,v.priority,v.scope,v.materials,v.reportTemplate,v.companyId],['Orden de trabajo','Planificada','p1','2026-03-02','Plan','c','s','e1','Ana','u','Alta','a','m','generator','c1']);assert.doesNotThrow(()=>normalizeOperation('workOrders',v));});
+test('el horizonte incluye hoy+90 y excluye hoy+91',()=>{assert.deepEqual(ensureOccurrences(gp({anchorDate:'2026-02-15',intervalDays:'90'}),[],'2026-02-15',eq).map(x=>x.dueDate),['2026-02-15','2026-05-16']);assert.deepEqual(ensureOccurrences(gp({anchorDate:'2026-02-15',intervalDays:'91'}),[],'2026-02-15',eq).map(x=>x.dueDate),['2026-02-15']);assert.deepEqual(ensureOccurrences(gp({anchorDate:'2026-05-17',intervalDays:'30'}),[],'2026-02-15',eq),[]);assert.equal(ensureOccurrences(gp({anchorDate:'2026-05-16',intervalDays:'30'}),[],'2026-02-15',eq).length,1);});
+import {regeneratePlan,closeVisit,visitsToClose,isLate} from '../public/js/planner.js';
+const vis=(p,iso,o={})=>({...newVisit(p,iso),...o});
+test('keep no mueve la ancla y repone el horizonte',()=>{const p=gp({anchorDate:'2026-01-30'});const v=vis(p,'2026-03-01',{status:'En curso'});const r=closeVisit(p,[v],v,'2026-03-10','keep','2026-03-10','Ana',eq);assert.equal(r.plan.anchorDate,'2026-01-30');assert.equal(r.visit.status,'Completada');assert.match(r.visit.notes,/2026-03-10/);assert.deepEqual(r.cancel,[]);assert.deepEqual(r.create.map(x=>x.dueDate),['2026-03-31','2026-04-30','2026-05-30','2026-06-29','2026-07-29'].filter(d=>d<='2026-06-08'));});
+test('shift mueve la ancla, cancela futuras y crea desde la nueva ancla',()=>{const p=gp({anchorDate:'2026-01-30'});const v=vis(p,'2026-03-01',{status:'En curso'});const f1=vis(p,'2026-03-31'),f2=vis(p,'2026-04-30');const r=closeVisit(p,[v,f1,f2],v,'2026-03-10','shift','2026-03-10','Ana',eq);assert.equal(r.plan.anchorDate,'2026-03-10');assert.deepEqual(r.cancel.map(x=>[x.id,x.status,x.closedReason]),[[f1.id,'Cancelada','calendario corrido'],[f2.id,'Cancelada','calendario corrido']]);assert.deepEqual(r.create.map(x=>x.dueDate),['2026-04-09','2026-05-09','2026-06-08']);const h=JSON.parse(r.plan.anchorHistory);assert.equal(h.length,1);assert.deepEqual([h[0].from,h[0].to,h[0].by,h[0].visitId],['2026-03-01','2026-03-10','Ana',v.id]);assert.ok(h[0].at);assert.equal(r.visit.status,'Completada');});
+test('shift no toca manualEdit ni En curso y no crea fechas pasadas',()=>{const p=gp({anchorDate:'2026-01-30'});const v=vis(p,'2026-03-01',{status:'En curso'});const m=vis(p,'2026-03-31',{manualEdit:'1'}),c=vis(p,'2026-04-30',{status:'En curso'}),past=vis(p,'2026-02-01');const r=closeVisit(p,[v,m,c,past],v,'2026-03-10','shift','2026-03-12','Ana',eq);assert.deepEqual(r.cancel,[]);assert.ok(r.create.every(x=>x.dueDate>='2026-03-12'));assert.deepEqual(r.create.map(x=>x.dueDate)[0],'2026-04-09');});
+test('shift hecho hoy no duplica la visita recién cerrada',()=>{const p=gp({anchorDate:'2026-01-30'});const v=vis(p,'2026-03-01',{status:'En curso'});const r=closeVisit(p,[v],v,'2026-03-10','shift','2026-03-10','Ana',eq);assert.equal(r.create[0].dueDate,'2026-04-09');});
+test('shift cuyas fechas coinciden con visitas a cancelar las conserva sin duplicar ids',()=>{const p=gp({anchorDate:'2026-01-30'});const v=vis(p,'2026-03-01',{status:'En curso'});const f=vis(p,'2026-04-09');const r=closeVisit(p,[v,f],v,'2026-03-10','shift','2026-03-10','Ana',eq);assert.deepEqual(r.cancel,[]);assert.deepEqual(r.create.map(x=>x.dueDate),['2026-05-09','2026-06-08']);const g=vis(p,'2026-04-09',{status:'Cancelada'});assert.deepEqual(closeVisit(p,[v,g],v,'2026-03-10','shift','2026-03-10','Ana',eq).create.map(x=>x.dueDate),['2026-05-09','2026-06-08']);});
+test('anchorHistory acumula y se limita a 50',()=>{const old=Array.from({length:55},(_,i)=>({from:'a',to:String(i),by:'x',at:'t',visitId:'v'}));const p=gp({anchorDate:'2026-01-30',anchorHistory:JSON.stringify(old)});const v=vis(p,'2026-03-01',{status:'En curso'});const h=JSON.parse(closeVisit(p,[v],v,'2026-03-10','shift','2026-03-10','Ana',eq).plan.anchorHistory);assert.equal(h.length,50);assert.equal(h.at(-1).to,'2026-03-10');assert.equal(JSON.parse(closeVisit(gp({anchorHistory:'basura'}),[v],v,'2026-03-10','shift','2026-03-10','Ana',eq).plan.anchorHistory).length,1);});
+test('modo de cierre inválido',()=>{const p=gp();const v=vis(p,'2026-03-01');assert.throws(()=>closeVisit(p,[v],v,'2026-03-10','x','2026-03-10','Ana',eq),/Modo de cierre inválido\./);});
+test('regeneratePlan cancela solo futuras Planificada sin manualEdit',()=>{const p=gp({anchorDate:'2026-03-10'});const a=vis(p,'2026-03-31'),b=vis(p,'2026-04-30',{manualEdit:'1'}),c=vis(p,'2026-05-30',{status:'Completada'}),d=vis(p,'2026-02-01'),o=vis(gp({id:'p2'}),'2026-04-01');const r=regeneratePlan(p,[a,b,c,d,o],'2026-03-10',eq);assert.deepEqual(r.cancel.map(x=>x.id),[a.id]);assert.equal(r.cancel[0].closedReason,'calendario corrido');assert.equal(a.status,'Planificada');});
+test('visitsToClose e isLate',()=>{const w=[{id:'1',status:'En curso',reportId:'r1'},{id:'2',status:'En curso',reportId:'r2'},{id:'3',status:'Planificada',reportId:'r1'},{id:'4',status:'En curso',reportId:''}];assert.deepEqual(visitsToClose(w,[{id:'r1',status:'Emitido'},{id:'r2',status:'Borrador'}]).map(x=>x.id),['1']);assert.equal(isLate({dueDate:'2026-03-01'},{serviceDate:'2026-03-01'}),false);assert.equal(isLate({dueDate:'2026-03-01'},{serviceDate:'2026-03-02'}),true);});
+
+test('doble shift revive las visitas canceladas por calendario corrido',()=>{const p=gp({anchorDate:'2026-03-02',intervalDays:'7'});const v1=vis(p,'2026-03-09',{status:'En curso'});const r1=closeVisit(p,[v1],v1,'2026-03-10','shift','2026-03-10','Ana',eq);const all1=[r1.visit,...r1.create];const mon=vis(p,'2026-03-23',{status:'Cancelada',closedReason:'calendario corrido'});const mon2=vis(p,'2026-03-30',{status:'Cancelada',closedReason:'calendario corrido'});const tue=all1.find(x=>x.dueDate==='2026-03-17');assert.ok(tue);const tueRun={...tue,status:'En curso'};const rest=[r1.visit,tueRun,...r1.create.filter(x=>x.id!==tue.id).map(x=>({...x,status:'Cancelada',closedReason:'calendario corrido'})),mon,mon2];const r2=closeVisit(r1.plan,rest,tueRun,'2026-03-16','shift','2026-03-16','Ana',eq);assert.equal(r2.plan.anchorDate,'2026-03-16');const c=r2.create.find(x=>x.dueDate==='2026-03-23');assert.equal(c.id,mon.id);assert.equal(c.status,'Planificada');assert.equal(c.closedReason,'');assert.deepEqual(r2.create.slice(0,3).map(x=>x.dueDate),['2026-03-23','2026-03-30','2026-04-06']);assert.ok(r2.create.find(x=>x.id===mon2.id&&x.status==='Planificada'));});
+test('una visita cancelada manualmente no se revive',()=>{const p=gp({anchorDate:'2026-03-02',intervalDays:'7'});for(const closedReason of ['','otro']){const m=vis(p,'2026-03-09',{status:'Cancelada',closedReason});assert.ok(!ensureOccurrences(p,[m],'2026-03-02',eq).some(x=>x.id===m.id),closedReason);}});
+test('keep revive visitas calendario corrido sobre la rejilla',()=>{const p=gp({anchorDate:'2026-03-02',intervalDays:'7'});const m=vis(p,'2026-03-09',{status:'Cancelada',closedReason:'calendario corrido',_sync:'x'});const o=ensureOccurrences(p,[m],'2026-03-02',eq).find(x=>x.id===m.id);assert.equal(o.status,'Planificada');assert.equal(o.closedReason,'');assert.equal(o._sync,'x');const past=vis(p,'2026-03-02',{status:'Cancelada',closedReason:'calendario corrido'});assert.ok(!ensureOccurrences(p,[past],'2026-03-03',eq).some(x=>x.id===past.id));});
+import {urgencyBuckets} from '../public/js/planner.js';
+const uv=(id,dueDate,o={})=>({id,dueDate,status:'Planificada',priority:'Media',type:'Orden de trabajo',...o});
+test('urgencyBuckets: bordes hoy, +7, +8, +30, +31',()=>{const T='2026-03-10',b=urgencyBuckets([uv('a','2026-03-09'),uv('b',T),uv('c','2026-03-11'),uv('d','2026-03-17'),uv('e','2026-03-18'),uv('f','2026-04-09'),uv('g','2026-04-10')],T),ids=k=>b[k].map(x=>x.id);assert.deepEqual(ids('overdue'),['a']);assert.deepEqual(ids('today'),['b']);assert.deepEqual(ids('week'),['c','d']);assert.deepEqual(ids('next30'),['e','f']);});
+test('urgencyBuckets: excluye cerradas, planes y fechas inválidas; En curso vencida va a overdue',()=>{const T='2026-03-10',b=urgencyBuckets([uv('a','2026-03-01',{status:'En curso'}),uv('b',T,{status:'Completada'}),uv('c',T,{status:'Cancelada'}),uv('p',T,{type:'Plan de mantenimiento'}),uv('x',''),uv('y','31/03/2026'),{id:'z',status:'Planificada'}],T);assert.deepEqual(b.overdue.map(x=>x.id),['a']);assert.deepEqual([b.today,b.week,b.next30],[[],[],[]]);});
+test('urgencyBuckets: filtros y orden por fecha y prioridad sin mutar',()=>{const T='2026-03-10',src=[uv('a',T,{priority:'Baja',ownerId:'o1'}),uv('b',T,{priority:'Crítica',ownerId:'o1',customerId:'c1',equipmentId:'e1'}),uv('c',T,{priority:'Alta',ownerId:'o2'}),uv('d','2026-03-09',{priority:'Baja',ownerId:'o1'})],copy=JSON.stringify(src);assert.deepEqual(urgencyBuckets(src,T).today.map(x=>x.id),['b','c','a']);assert.deepEqual(urgencyBuckets(src,T,{ownerId:'o1'}).today.map(x=>x.id),['b','a']);assert.deepEqual(urgencyBuckets(src,T,{ownerId:'o1',customerId:'c1',equipmentId:'e1'}).today.map(x=>x.id),['b']);assert.deepEqual(urgencyBuckets(src,T,{ownerId:''}).overdue.map(x=>x.id),['d']);assert.equal(JSON.stringify(src),copy);});
+
+import {localDate} from '../public/js/domain.js';
+import {canGenerateVisits,missingVisits,plannerView} from '../public/js/planner-ui.js';
+test('permiso de generar visitas considera el último rol conocido',()=>{
+  assert.equal(canGenerateVisits(null,''),true);
+  assert.equal(canGenerateVisits(null),true);
+  assert.equal(canGenerateVisits(null,'technician'),false);
+  assert.equal(canGenerateVisits(null,'supervisor'),true);
+  assert.equal(canGenerateVisits(null,'client'),false);
+  assert.equal(canGenerateVisits({role:'admin'}),true);
+  assert.equal(canGenerateVisits({role:'supervisor'}),true);
+  assert.equal(canGenerateVisits({role:'technician'}),false);
+  assert.equal(canGenerateVisits({role:'technician'},'supervisor'),false);
+  for(const role of ['editor','approver','client'])assert.equal(canGenerateVisits({role}),false);
+});
+test('missingVisits respeta empresa y catálogo de equipos activo',()=>{
+  const p=plan({id:'p1',equipmentId:'eq1',companyId:'c1'}),other=plan({id:'p2',equipmentId:'eq1',companyId:'c2'}),
+    state={companyId:'c1',workOrders:[p,other],equipment:[{id:'eq1',companyId:'c1'}]};
+  const out=missingVisits(state,'2026-01-15');
+  assert.ok(out.length>0);assert.ok(out.every(v=>v.planId==='p1'));
+  assert.equal(missingVisits({...state,equipment:[]},'2026-01-15').length,0);
+});
+test('plannerView escapa texto y muestra secciones y estado vacío',()=>{
+  const empty=plannerView({companyId:'c1',workOrders:[],equipment:[],customers:[],opsFilter:{}});
+  assert.match(empty,/Aún no hay planes/);
+  const v={...newOperation('workOrders','c1'),name:'<img src=x>',planId:'p1',dueDate:localDate(),status:'Planificada'};
+  const html=plannerView({companyId:'c1',workOrders:[plan({id:'p1'}),v],equipment:[],customers:[],opsFilter:{}});
+  assert.ok(!html.includes('<img src=x>'));
+  for(const t of ['Vencidos','Hoy','Esta semana','Próximos 30 días'])assert.ok(html.includes(t));
+});
+
+import {plansFromForm} from '../public/js/planner.js';
+const eqs=['a','b','c'].map(i=>({id:'e-'+i,companyId:'c1',name:'Equipo '+i,tag:'T-'+i,customerId:'cu-'+i,siteId:'si-'+i}));
+const form=(o={})=>({name:'Plan anual',equipmentIds:eqs.map(x=>x.id),anchorDate:'2026-03-02',intervalDays:'30',ownerId:'',owner:'',scope:'',reportTemplate:'general',...o});
+test('plansFromForm crea un plan por equipo con cliente e instalación del equipo',()=>{const out=plansFromForm(form(),eqs,'c1');assert.equal(out.length,3);assert.equal(new Set(out.map(p=>p.id)).size,3);out.forEach((p,i)=>{assert.equal(p.type,'Plan de mantenimiento');assert.equal(p.planState,'Activo');assert.equal(p.status,'Planificada');assert.equal(p.equipmentId,eqs[i].id);assert.equal(p.customerId,eqs[i].customerId);assert.equal(p.siteId,eqs[i].siteId);assert.equal(p.anchorDate,'2026-03-02');assert.equal(p.intervalDays,'30');assert.equal(p.reportTemplate,'general');assert.doesNotThrow(()=>normalizeOperation('workOrders',p));});});
+test('plansFromForm valida equipos, ancla, periodicidad y empresa',()=>{assert.throws(()=>plansFromForm(form({equipmentIds:[]}),eqs,'c1'),/^Error: Selecciona al menos un equipo\.$/);for(const o of [{anchorDate:''},{intervalDays:''},{intervalDays:'0'},{intervalDays:'1.5'},{anchorDate:'2026-02-30'}])assert.throws(()=>plansFromForm(form(o),eqs,'c1'),/^Error: Define fecha ancla y periodicidad\.$/,JSON.stringify(o));assert.throws(()=>plansFromForm(form(),[{...eqs[0],companyId:'c2'},...eqs.slice(1)],'c1'),/^Error: El equipo pertenece a otra empresa\.$/);assert.throws(()=>plansFromForm(form({name:' '}),eqs,'c1'),/Completa el nombre/);});
+test('plansFromForm reutiliza los ids dados y registra los nuevos; equipo desconocido sigue fallando',()=>{const ids={};const a=plansFromForm(form(),eqs,'c1',ids);assert.deepEqual(Object.keys(ids).sort(),eqs.map(x=>x.id));const b=plansFromForm(form(),eqs,'c1',ids);assert.deepEqual(b.map(p=>p.id),a.map(p=>p.id));assert.notEqual(plansFromForm(form(),eqs,'c1')[0].id,a[0].id);assert.throws(()=>plansFromForm(form({equipmentIds:['nope']}),eqs,'c1',ids),/Selecciona al menos un equipo\./);});
+import {assertCanManagePlans} from '../public/js/planner-ui.js';
+test('assertCanManagePlans: técnico no, supervisor y modo local sí',()=>{assert.throws(()=>assertCanManagePlans({role:'technician'}),/no permite administrar planes/);assert.throws(()=>assertCanManagePlans(null,'technician'),/no permite/);assert.doesNotThrow(()=>assertCanManagePlans({role:'supervisor'}));assert.doesNotThrow(()=>assertCanManagePlans({role:'admin'}));assert.doesNotThrow(()=>assertCanManagePlans(null,''));});
+import {shouldWriteCancel,shouldWriteCreate,planConflict} from '../public/js/planner.js';
+test('shouldWriteCancel: omite visitas cambiadas, borradas o con edición manual; reintento propio = hecho',()=>{
+  assert.equal(shouldWriteCancel({status:'Planificada'}),'write');
+  assert.equal(shouldWriteCancel({status:'En curso',reportId:'r1'}),'skip');
+  assert.equal(shouldWriteCancel({status:'Planificada',manualEdit:'1'}),'skip');
+  assert.equal(shouldWriteCancel({status:'Planificada',_sync:{deleted:true}}),'skip');
+  assert.equal(shouldWriteCancel({status:'Cancelada',closedReason:'calendario corrido'}),'done');
+  assert.equal(shouldWriteCancel({status:'Cancelada',closedReason:''}),'skip');
+  assert.equal(shouldWriteCancel(undefined),'skip');
+});
+test('shouldWriteCreate: no pisa ni resucita registros cambiados',()=>{
+  const fresh={status:'Planificada'},rev={status:'Planificada',closedReason:''};
+  assert.equal(shouldWriteCreate(undefined,fresh),'write');
+  assert.equal(shouldWriteCreate({status:'Planificada'},fresh),'done');
+  assert.equal(shouldWriteCreate({status:'Planificada'},rev),'done');
+  assert.equal(shouldWriteCreate({status:'Cancelada',closedReason:'calendario corrido'},rev),'write');
+  assert.equal(shouldWriteCreate({status:'Cancelada',closedReason:''},rev),'skip');
+  assert.equal(shouldWriteCreate({status:'En curso'},rev),'skip');
+  assert.equal(shouldWriteCreate({status:'Cancelada',closedReason:'calendario corrido',_sync:{deleted:true}},rev),'skip');
+});
+test('planConflict: plan más nuevo, borrado, o con los mismos valores buscados',()=>{
+  const snap={updatedAt:'t1',name:'P',intervalDays:'30'},want={name:'P',intervalDays:'7'};
+  assert.equal(planConflict({...snap},snap,want),false);
+  assert.equal(planConflict({updatedAt:'t2',name:'P',intervalDays:'15'},snap,want),true);
+  assert.equal(planConflict({updatedAt:'t2',name:'P',intervalDays:'7'},snap,want),false);
+  assert.equal(planConflict({...snap,_sync:{deleted:true}},snap,want),true);
+  assert.equal(planConflict(undefined,snap,want),true);
+});
+import {startVisit} from '../public/js/planner.js';
+import {canStartVisit} from '../public/js/planner-ui.js';
+const sv=(o={})=>({...newOperation('workOrders','c1'),id:'visit-p1-20260115',planId:'p1',status:'Planificada',dueDate:'2026-01-15',...o});
+test('startVisit usa reportTemplate y cae en general si es inválida o vacía',()=>{
+  assert.equal(startVisit(sv({reportTemplate:'generator'}),[],'2026-01-15').reportKey,'generator');
+  assert.equal(startVisit(sv({reportTemplate:''}),[],'2026-01-15').reportKey,'general');
+  assert.equal(startVisit(sv({reportTemplate:'no-existe'}),[],'2026-01-15').reportKey,'general');
+  const s=startVisit(sv(),[],'2026-01-15');assert.equal(s.visit.status,'En curso');assert.equal(s.create,true);
+});
+test('startVisit no crea otro informe si el vinculado existe y no está borrado',()=>{
+  const s=startVisit(sv({status:'En curso',reportId:'r1'}),[{id:'r1'}],'2026-01-15');
+  assert.equal(s.create,false);assert.equal(s.reportId,'r1');assert.equal(s.visit.reportId,'r1');
+});
+test('startVisit crea un informe nuevo si el vinculado está borrado o no existe',()=>{
+  for(const reports of [[{id:'r1',_sync:{deleted:true}}],[]]){const s=startVisit(sv({status:'En curso',reportId:'r1'}),reports,'2026-01-15');assert.equal(s.create,true);assert.equal(s.reportId,'');assert.equal(s.visit.reportId,'');assert.equal(s.visit.status,'En curso');}
+});
+test('canStartVisit: técnico solo en visitas sin asignar o propias',()=>{
+  const tech={id:'u1',role:'technician'};
+  assert.equal(canStartVisit(sv({ownerId:''}),tech,''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u1'}),tech,''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),tech,''),false);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),{id:'a',role:'admin'},''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),null,''),true);
+  assert.equal(canStartVisit(sv({ownerId:'u2'}),null,'technician'),false);
+  assert.equal(canStartVisit(sv({ownerId:''}),null,'technician'),true);
+});
+test('tras correr el calendario la fecha ancla (visita ya hecha) no genera otra visita',()=>{
+  const p=plan({id:'p1',equipmentId:'e1',companyId:'c1',intervalDays:'30',anchorDate:'2026-01-15',dueDate:'2026-01-15'});
+  const v=sv({equipmentId:'e1'}),r=closeVisit(p,[v],v,'2026-01-20','shift','2026-01-20','t',eq);
+  assert.equal(r.plan.anchorDate,'2026-01-20');
+  const all=ensureOccurrences(r.plan,[r.visit,...r.create],'2026-01-20',eq).map(x=>x.dueDate);
+  assert.deepEqual(all,[]);
+  assert.ok(r.create.length>0&&r.create.every(x=>x.dueDate>'2026-01-20'));assert.equal(r.create[0].dueDate,'2026-02-19');
+  assert.equal(ensureOccurrences(r.plan,[],'2026-01-20',eq)[0].dueDate,'2026-02-19');
+});
+import {claimStart} from '../public/js/planner-ui.js';
+test('claimStart: el segundo inicio de la misma visita se ignora hasta liberarla',()=>{
+  const set=new Set();
+  assert.equal(claimStart(set,'v1'),true);assert.equal(claimStart(set,'v1'),false);assert.equal(claimStart(set,'v2'),true);
+  set.delete('v1');assert.equal(claimStart(set,'v1'),true);
+});
+
+import {cancelFutureVisits} from '../public/js/planner.js';
+test('cancelFutureVisits: cancela futuras Planificada sin manualEdit; respeta el resto; idempotente',()=>{
+  const p=gp({anchorDate:'2026-03-10'}),a=vis(p,'2026-03-31'),b=vis(p,'2026-04-30',{manualEdit:'1'}),c=vis(p,'2026-05-30',{status:'En curso'}),d=vis(p,'2026-06-30',{status:'Completada'}),e=vis(p,'2026-02-01'),f=vis(p,'2026-07-30',{status:'Cancelada'}),o=vis(gp({id:'p2'}),'2026-04-01'),h=vis(p,'2026-03-10');
+  const r=cancelFutureVisits(p,[a,b,c,d,e,f,o,h],'2026-03-10');
+  assert.deepEqual(r.map(x=>x.id).sort(),[a.id,h.id].sort());
+  assert.ok(r.every(x=>x.status==='Cancelada'&&x.closedReason==='plan cerrado'));
+  assert.equal(a.status,'Planificada');
+  assert.deepEqual(cancelFutureVisits(p,r,'2026-03-10'),[]);
+  assert.equal(shouldWriteCancel({status:'Cancelada',closedReason:'plan cerrado'}),'done');
+});

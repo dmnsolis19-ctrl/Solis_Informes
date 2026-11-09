@@ -1,5 +1,5 @@
 // Tareas diarias: limpieza de enlaces caducados, respaldo de datos y resumen de pendientes por correo.
-import {evaluateAlerts, latestReports} from '../public/js/operations.js';
+import {evaluateAlerts, latestReports, isPlannerPlan} from '../public/js/operations.js';
 
 const DAY = 86400000;
 export const retention = {sharesAfterExpiryDays: 30, backupDays: 14};
@@ -69,7 +69,8 @@ const more = (items, max, line) => items.slice(0, max).map(line).concat(items.le
 export function buildDigest(user, data, today, nowMs) {
   const alerts = evaluateAlerts(latestReports(data.reports.filter(r => allowedFor(user, r.companyId))), data.tasks.filter(t => allowedFor(user, t.companyId)), data.rules.filter(r => allowedFor(user, r.companyId)), today).filter(a => allowedFor(user, a.companyId));
   const weekAhead = localDay(new Date(nowMs + 7 * DAY), data.timeZone);
-  const orders = data.orders.filter(o => allowedFor(user, o.companyId) && ['Planificada', 'En curso'].includes(o.status) && o.dueDate && o.dueDate <= weekAhead).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  // Los planes del planner (con ancla o estado) no son órdenes con fecha: sus visitas ya se listan solas. Los planes heredados (solo dueDate) siguen apareciendo.
+  const orders = data.orders.filter(o => !isPlannerPlan(o) && allowedFor(user, o.companyId) && ['Planificada', 'En curso'].includes(o.status) && o.dueDate && o.dueDate <= weekAhead).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const shares = data.shares.filter(s => s.created_by === user.id);
   if (!alerts.length && !orders.length && !shares.length) return null;
   const sections = [];

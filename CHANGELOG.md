@@ -1,3 +1,14 @@
+# 3.7.0 · Planner de mantenimiento · 9 de noviembre de 2026
+
+- Entrada «Planner» en el menú, antes de «Órdenes y mantenimiento»: visitas por urgencia en «Vencidos», «Hoy», «Esta semana» y «Próximos 30 días», con filtros por técnico, cliente y equipo, marca «Sin técnico» y aviso de planes en pausa.
+- Planes de mantenimiento (órdenes de tipo «Plan de mantenimiento») con fecha ancla y periodicidad en días de calendario fijo, técnico por defecto, plantilla de informe y alcance. Un plan por equipo al aplicarlo a varios; se admiten varios planes por equipo. Acciones: crear, editar, pausar, reanudar y cerrar (un plan cerrado no se reabre). Al cerrar un plan se cancelan sus visitas futuras Planificadas sin edición manual (motivo «plan cerrado»; nunca se borran; En curso, Completadas, con edición manual y pasadas no se tocan); si una visita cambió en otro dispositivo se omite y se avisa.
+- Las visitas se generan por adelantado (90 días desde hoy) como órdenes individuales con id determinista `visit-<plan>-<AAAAMMDD>`. La generación corre en el cliente al abrir el Planner y tras sincronizar, y solo para administrador o supervisor (o modo local sin cuenta conocida).
+- «Iniciar visita» crea un informe de servicio prellenado (cliente, sitio, equipo, objetivo y alcance; plantilla del plan o «Informe técnico general») y deja la visita «En curso»; luego «Abrir informe».
+- Cierre: al abrir el Planner un administrador o supervisor, las visitas cuyo informe está «Emitido» se cierran solas si fueron a tiempo (el calendario se mantiene). Si se hicieron con retraso, el diálogo «Esta visita se hizo con retraso» ofrece «Mantener calendario» o «Correr calendario desde esta visita»; esta última toma la fecha de servicio del informe como nueva ancla, cancela con motivo «calendario corrido» las visitas futuras planificadas sin edición manual (nunca las borra), las recrea desde la nueva ancla y conserva el historial de anclas en el plan. Escape deja la visita «En curso».
+- Editar la ancla o la periodicidad de un plan activo regenera las visitas futuras igual; reanudar un plan pausado las reconcilia. Los guardados se protegen contra sobrescribir registros modificados en otro dispositivo.
+- Sin migración D1, sin cambios en IndexedDB ni en el protocolo de sincronización. El botón «Programar siguiente» de «Órdenes y mantenimiento» no cambia. El resumen diario por correo ya lista las órdenes vencidas o de la semana y ahora incluye las visitas del Planner (los planes no aparecen).
+- 199 pruebas automáticas superadas y 9 pruebas de navegador superadas.
+
 # 3.6.0 · Gráficos, verificación y seguridad · 3 de noviembre de 2026
 
 - Cinco plantillas nuevas (18 en total): `plcFat`, `plcSat`, `waterPlant`, `bess` y `switchboard`; grupo «Agua y procesos». Sin lecturas ni límites inventados.

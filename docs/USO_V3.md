@@ -105,3 +105,41 @@ Recorrido de actualización y límites: `docs/releases/ACTUALIZAR_v3.5.0.md`.
 ## Gráficos, verificación y seguridad · 3.6
 
 Los recorridos de gráficos y CSV, verificación pública, fotografías con hora y ubicación, dictado, verificación en dos pasos, tarea diaria y errores de dispositivos están descritos en `ACTUALIZAR_v3.6.0.md`.
+
+## Planner de mantenimiento
+
+«Planner» (menú, antes de «Órdenes y mantenimiento») lista las visitas pendientes por urgencia: «Vencidos», «Hoy», «Esta semana» y «Próximos 30 días». Se filtra por técnico, cliente y equipo; las visitas sin responsable muestran «Sin técnico» y los planes en pausa se avisan en la lista.
+
+### Crear un plan
+
+1. Pulsa «Crear plan», escribe el nombre del plan (obligatorio) y elige uno o más equipos. Con varios equipos se crea un plan por equipo; un equipo puede tener varios planes.
+2. Define la fecha ancla, que es la fecha de la primera visita, y la periodicidad en días. El calendario es fijo: las visitas caen en ancla + n × días, sin importar cuándo se hicieron las anteriores.
+3. Opcionalmente indica técnico por defecto, plantilla de informe y alcance.
+
+Cada plan permite editar, «Pausar», «Reanudar» y «Cerrar plan». Al cerrar un plan se cancelan sus visitas futuras en estado Planificada (con motivo «plan cerrado»); no se tocan las visitas con edición manual, En curso, Completadas ni las de fechas pasadas, y nunca se borran. Un plan cerrado no se reabre. Editar la ancla o la periodicidad de un plan activo regenera las visitas futuras; reanudar uno pausado las reconcilia.
+
+### Ciclo de una visita
+
+- Las visitas se crean por adelantado, 90 días desde hoy, como órdenes individuales «Planificada». Las crea el Planner al abrirse y tras sincronizar, solo en dispositivos de administrador o supervisor (o en modo local sin cuenta conocida). El Planner lista todas las visitas de la empresa; los técnicos solo pueden iniciar las asignadas a ellos y las que no tienen responsable.
+- «Iniciar visita» crea un informe de servicio prellenado (cliente, sitio, equipo, objetivo y alcance) con la plantilla del plan, o «Informe técnico general» si no tiene, y pasa la visita a «En curso». Después aparece «Abrir informe».
+- Cuando el informe queda «Emitido» y un administrador o supervisor abre el Planner, la visita se cierra. Si se hizo a tiempo, el calendario no cambia. Si la fecha de servicio del informe es posterior a la programada, aparece «Esta visita se hizo con retraso» con dos opciones: «Mantener calendario» (por defecto) o «Correr calendario desde esta visita». Escape deja la visita «En curso».
+
+### Correr calendario
+
+Plan cada 30 días con ancla el 1 de marzo (visitas: 1 mar, 31 mar, 30 abr, 30 may); la visita del 31 de marzo se hace el 9 de abril, con retraso:
+
+- «Mantener calendario»: las siguientes siguen el 30 de abril y el 30 de mayo.
+- «Correr calendario»: la nueva ancla es el 9 de abril y las siguientes caen el 9 de mayo y el 8 de junio.
+- Las visitas futuras planificadas sin edición manual se cancelan con motivo «calendario corrido» (no se borran) y se recrean desde la nueva ancla; el plan guarda el historial de anclas.
+
+### Roles y sincronización
+
+Administrador y supervisor generan visitas y cierran las completadas; el técnico solo puede iniciar las visitas asignadas a él o sin responsable (el Planner las lista todas). Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Programar siguiente» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan; no se ofrece para planes del Planner ni para sus visitas. Los planes del Planner se editan desde el Planner (aunque se abran desde «Órdenes y mantenimiento»), no con el editor genérico. Al cambiar el técnico, la plantilla, el alcance o el nombre de un plan, las visitas futuras «Planificada» sin edición manual se actualizan; mover la fecha o cambiar el responsable de una visita a mano la marca como edición manual y el calendario ya no la cancela. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
+
+### Limitaciones de la fase 1
+
+- No hay vista de calendario en cuadrícula ni de carga por técnico.
+- No hay mantenimiento por horas de operación.
+- No hay indicadores (cumplimiento, MTBF, MTTR), repuestos ni costos.
+- El portal del cliente no cambia.
+- El cierre automático requiere abrir el Planner en un dispositivo de administrador o supervisor; no hay cierre en segundo plano.

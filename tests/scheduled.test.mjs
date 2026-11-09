@@ -4,6 +4,7 @@ import {makeEnvironment, memoryBucket} from '../scripts/local-bindings.mjs';
 import worker from '../worker/index.js';
 import {newCompany, uid} from '../public/js/domain.js';
 import {newOperation} from '../public/js/operations.js';
+import {plansFromForm} from '../public/js/planner.js';
 import {cleanupShares, backupWorkspaces, sendDigests, buildDigest, runScheduled} from '../worker/scheduled.js';
 
 async function call(env, path, body, cookie = '') {
@@ -106,6 +107,37 @@ test('el resumen respeta empresas asignadas, ignora clientes y se puede desactiv
   assert.equal((await sendDigests(env, new Date('2026-11-02T11:00:00Z'))).sent, 0);
   assert.equal(stub.sent.length, 0);
   stub.restore();
+  env.DB.close();
+});
+
+test('el resumen marca visitas vencidas y omite los planes nuevos sin fecha programada', async () => {
+  const {env, company} = await setup();
+  const base = {companyId: company.id, status: 'Planificada', owner: ''};
+  const data = {reports: [], tasks: [], rules: [], shares: [], timeZone: 'America/Santiago', appUrl: '', appName: 'SOLIS Field', orders: [
+    {...base, id: 'v1', type: 'Orden de trabajo', name: 'Visita atrasada', dueDate: '2026-11-01'},
+    {...base, id: 'v2', type: 'Orden de trabajo', name: 'Visita de la semana', dueDate: '2026-11-05'},
+    {...base, id: 'p1', type: 'Plan de mantenimiento', name: 'Plan nuevo', dueDate: '', anchorDate: '2026-11-01', planState: 'Activo', intervalDays: '30'}]};
+  const digest = buildDigest({id: 'u', email: 'x@y.z', role: 'admin', companyIds: ['*']}, data, '2026-11-02', Date.UTC(2026, 10, 2));
+  assert.match(digest.text, /VENCIDA 2026-11-01 · Visita atrasada/);
+  assert.match(digest.text, /\n\s+• 2026-11-05 · Visita de la semana/);
+  assert.ok(!digest.text.includes('VENCIDA 2026-11-05'));
+  assert.ok(!digest.text.includes('Plan nuevo'));
+  assert.match(digest.text, /Órdenes y mantenimientos \(2\)/);
+  env.DB.close();
+});
+
+test('el resumen omite planes del planner con ancla pasada y conserva los heredados', async () => {
+  const {env, company} = await setup();
+  const [plan] = plansFromForm({name: 'Plan real', equipmentIds: ['eq1'], anchorDate: '2026-11-01', intervalDays: '30'}, [{id: 'eq1', companyId: company.id, tag: 'B-1', name: 'Bomba'}], company.id);
+  assert.equal(plan.dueDate, '2026-11-01');
+  assert.equal(plan.status, 'Planificada');
+  const legacy = {companyId: company.id, id: 'l1', type: 'Plan de mantenimiento', status: 'Planificada', name: 'Plan heredado', dueDate: '2026-11-01', anchorDate: '', planState: '', owner: ''};
+  const data = {reports: [], tasks: [], rules: [], shares: [], timeZone: 'America/Santiago', appUrl: '', appName: 'SOLIS Field', orders: [plan, legacy, {companyId: company.id, id: 'v1', type: 'Orden de trabajo', status: 'Planificada', name: 'Visita atrasada', dueDate: '2026-11-01', owner: ''}]};
+  const digest = buildDigest({id: 'u', email: 'x@y.z', role: 'admin', companyIds: ['*']}, data, '2026-11-02', Date.UTC(2026, 10, 2));
+  assert.ok(!digest.text.includes('Plan real'));
+  assert.match(digest.text, /VENCIDA 2026-11-01 · Plan heredado/);
+  assert.match(digest.text, /VENCIDA 2026-11-01 · Visita atrasada/);
+  assert.match(digest.text, /Órdenes y mantenimientos \(2\)/);
   env.DB.close();
 });
 
