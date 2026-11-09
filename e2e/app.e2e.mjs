@@ -462,6 +462,7 @@ async function loadFixture(page, {menu = false} = {}) {
     const companyId = (await db.all('companies'))[0].id, today = localDate();
     const customer = Object.assign(newCatalog('customers', companyId), {name: 'Cliente Carga'}); await db.saveEntity('customers', customer);
     const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Carga', tag: 'EQ-CAR', customerId: customer.id}); await db.saveEntity('equipment', asset);
+    await db.saveEntity('equipment', Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Vacío', tag: 'EQ-VAC', customerId: customer.id}));
     const plan = Object.assign(newCatalog('workOrders', companyId), {name: 'Plan carga', type: 'Plan de mantenimiento', customerId: customer.id, equipmentId: asset.id, anchorDate: addDays(today, 400), dueDate: addDays(today, 400), intervalDays: '30', status: 'Planificada', planState: 'Activo', owner: 'Ana Pérez', ownerId: 'u-ana', scope: 'Revisar sellos', reportTemplate: 'general'});
     await db.saveEntity('workOrders', plan);
     const visit = (name, dueDate, extra = {}) => db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name, type: 'Orden de trabajo', planId: plan.id, customerId: customer.id, equipmentId: asset.id, dueDate, status: 'Planificada', priority: 'Media'}, extra));
@@ -521,9 +522,16 @@ test('la vista Carga cuenta las visitas abiertas por técnico y semana, y la cel
   assert.equal(await cellAt(page, 'Ana Pérez', 0).getAttribute('aria-pressed'), 'false');
   await cellAt(page, 'Ana Pérez', 'overdue').click();
   await page.getByText('Elige una celda para ver sus visitas.').waitFor();
-  // el filtro de cliente que no coincide deja la tabla vacía con aviso
-  await page.selectOption('[data-ops-filter=equipmentId]', {index: 1});
+  // un filtro que no coincide con ninguna visita deja la tabla vacía con aviso; quitarlo la restaura
+  await page.selectOption('[data-ops-filter=equipmentId]', {label: 'EQ-VAC · Equipo Vacío'});
+  await page.getByText('Ninguna visita coincide con los filtros.').waitFor();
+  assert.equal(await page.locator('.load-table').count(), 0);
+  await page.getByRole('button', {name: 'Quitar filtros'}).click();
   await page.locator('.load-table').waitFor();
+  await page.selectOption('[data-ops-filter=ownerId]', {value: 'u-ana'});
+  assert.deepEqual(await page.locator('.load-table tbody th').allTextContents(), ['Ana Pérez']);
+  await page.getByRole('button', {name: 'Carga', exact: true}).click();
+  await page.selectOption('[data-ops-filter=ownerId]', {value: ''});
   await page.reload({waitUntil: 'networkidle'});
   await page.locator('nav').getByText('Planner', {exact: true}).click();
   await page.locator('.load-table').waitFor();
@@ -556,6 +564,37 @@ test('reasignar una visita en modo local cambia de fila, marca la edición manua
   assert.equal(await cellAt(page, 'Beto Soto', 0).textContent(), '1');
   assert.deepEqual(await page.locator('.load-table tbody th').allTextContents(), ['Ana Pérez', 'Beto Soto', 'Sin técnico']);
   assert.equal(await page.locator('[data-planner-visit]').count(), 0, 'la celda elegida quedó sin esa visita y se ve la guía o la lista vacía');
+  // Enter en el campo de texto guarda sin recargar la página
+  const url = page.url();
+  await cellAt(page, 'Sin técnico', 0).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita N1'}).getByRole('button', {name: 'Reasignar'}).click();
+  await page.fill('input[name=owner]', 'Carla Díaz');
+  await page.press('input[name=owner]', 'Enter');
+  await page.locator('.modal').waitFor({state: 'detached'});
+  assert.equal(page.url(), url);
+  const carla = await woRow(page, 'Visita N1');
+  assert.equal(carla.owner, 'Carla Díaz'); assert.equal(carla.manualEdit, '1');
+  // el campo admite como máximo 200 caracteres
+  await cellAt(page, 'Carla Díaz', 0).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita N1'}).getByRole('button', {name: 'Reasignar'}).click();
+  assert.equal(await page.locator('input[name=owner]').getAttribute('maxlength'), '200');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('sin sesión y con el rol de supervisor guardado, Reasignar pide conectarse y no cambia la visita', async () => {
+  const {context, page} = await newPage();
+  await loadFixture(page);
+  await page.evaluate(async () => { await (await import('/js/store.js')).setMeta('lastRole', 'supervisor'); });
+  await page.reload({waitUntil: 'networkidle'});
+  await openLoad(page);
+  await cellAt(page, 'Ana Pérez', 0).click();
+  const before = await woRow(page, 'Visita A1');
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).getByRole('button', {name: 'Reasignar'}).click();
+  await page.getByText('Conéctate para elegir a la persona de la empresa.').waitFor();
+  assert.equal(await page.locator('.modal').count(), 0);
+  const after = await woRow(page, 'Visita A1');
+  assert.equal(after.ownerId, 'u-ana'); assert.equal(after.updatedAt, before.updatedAt); assert.equal(after.manualEdit || '', '');
   assert.deepEqual(page.errors, []);
   await context.close();
 });

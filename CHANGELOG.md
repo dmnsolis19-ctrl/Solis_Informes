@@ -6,7 +6,7 @@
 - Pendiente cerrado: un técnico que abre un plan lo ve en solo lectura (campos deshabilitados, próxima visita e historial de anclas) en lugar del error «Tu rol no permite administrar planes»; en las tarjetas de planes ve «Ver plan» sin pausar ni cerrar.
 - Pendiente cerrado: al cerrar sesión se guarda el rol «none», de modo que un dispositivo compartido sin conexión ya no trata «sin sesión» como modo local del usuario anterior.
 - Sin migración D1, sin cambios en IndexedDB ni en la sincronización.
-- 234 pruebas automáticas superadas y 18 pruebas de navegador superadas.
+- 236 pruebas automáticas superadas y 19 pruebas de navegador superadas.
 
 # 3.8.0 · Calendario del Planner y ajustes · 9 de noviembre de 2026
 

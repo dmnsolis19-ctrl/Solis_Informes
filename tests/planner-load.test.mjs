@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {workloadTable, workloadCell, reassignVisit, planReadonlyData, mondayOf} from '../public/js/planner.js';
+import {workloadTable, workloadCell, reassignVisit, planReadonlyData, mondayOf, textPerson} from '../public/js/planner.js';
 import {canGenerateVisits} from '../public/js/planner-ui.js';
 
 const TODAY = '2026-11-09'; // lunes
@@ -138,6 +138,23 @@ test('reassignVisit: null si no hay cambio o la visita ya no está Planificada',
   assert.equal(reassignVisit(v({owner: 'Carla'}), {ownerId: '', owner: ' Carla '}), null);
   assert.equal(reassignVisit(v({}), {ownerId: '', owner: ''}), null);
   for (const status of ['En curso', 'Completada', 'Cancelada']) assert.equal(reassignVisit(v({status, ownerId: 'u1'}), {ownerId: 'u2', owner: 'beto@e.test'}), null, status);
+});
+
+test('responsable escrito: si el texto no cambió se conserva la cuenta y no hay cambio; si cambió se quita la cuenta', () => {
+  const visit = v({ownerId: 'u1', owner: 'ana@e.test'});
+  assert.deepEqual(textPerson(visit, ' ana@e.test '), {ownerId: 'u1', owner: 'ana@e.test'});
+  assert.equal(reassignVisit(visit, textPerson(visit, 'ana@e.test')), null);
+  const changed = reassignVisit(visit, textPerson(visit, 'Carla'));
+  assert.equal(changed.ownerId, ''); assert.equal(changed.owner, 'Carla'); assert.equal(changed.manualEdit, '1');
+  const local = v({owner: 'Beto'});
+  assert.equal(reassignVisit(local, textPerson(local, 'Beto')), null);
+  assert.equal(reassignVisit(local, textPerson(local, 'Carla')).owner, 'Carla');
+});
+
+test('workloadTable: una fila de solo texto con el nombre de una cuenta se rotula «(sin cuenta)»', () => {
+  const t = workloadTable([v({ownerId: 'u1'}), v({owner: 'Ana@e.test'}), v({owner: 'Otro'})], TODAY, people);
+  assert.deepEqual(t.rows.map(r => r.name), ['ana@e.test', 'Ana@e.test (sin cuenta)', 'Otro']);
+  assert.equal(workloadTable([v({owner: 'Solo'})], TODAY, people).rows[0].name, 'Solo');
 });
 
 test('planReadonlyData: prepara los datos del plan para el técnico', () => {
