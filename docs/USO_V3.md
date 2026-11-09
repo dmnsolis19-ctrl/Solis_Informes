@@ -136,9 +136,20 @@ Plan cada 30 días con ancla el 1 de marzo (visitas: 1 mar, 31 mar, 30 abr, 30 m
 
 Administrador y supervisor generan visitas y cierran las completadas; el técnico solo puede iniciar las visitas asignadas a él o sin responsable (el Planner las lista todas). Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Programar siguiente» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan; no se ofrece para planes del Planner ni para sus visitas. Los planes del Planner se editan desde el Planner (aunque se abran desde «Órdenes y mantenimiento»), no con el editor genérico. Al cambiar el técnico, la plantilla, el alcance o el nombre de un plan, las visitas futuras «Planificada» sin edición manual se actualizan; mover la fecha o cambiar el responsable de una visita a mano la marca como edición manual y el calendario ya no la cancela. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
 
+### Vista de calendario
+
+Arriba de los filtros, el selector **Lista | Calendario** cambia la forma de ver las mismas visitas; la elección se recuerda en el dispositivo.
+
+- El mes se muestra con la semana desde el lunes y los días de los meses vecinos atenuados. Cada día lista hasta 3 visitas (nombre y TAG) y «+N más». Colores: planificada neutra, en curso destacada, completada verde y vencida roja; las canceladas no se muestran.
+- «Mes anterior», «Mes siguiente» y «Hoy» cambian de mes. Puedes ir a cualquier mes; los que no tienen visitas se ven vacíos.
+- Los filtros de técnico, cliente y equipo se aplican también al calendario.
+- Al pulsar un día (por defecto, hoy) se listan debajo todas sus visitas con las mismas acciones que la lista: «Iniciar visita», «Abrir informe» y «Abrir / editar».
+- En el móvil, en lugar de las etiquetas cada día muestra un contador y el detalle está en la lista del día elegido.
+- Abrir el calendario no genera ni cierra visitas distintas de las de la lista.
+
 ### Limitaciones de la fase 1
 
-- No hay vista de calendario en cuadrícula ni de carga por técnico.
+- No hay vista de carga por técnico, vista semanal ni arrastrar para reprogramar visitas en el calendario.
 - No hay mantenimiento por horas de operación.
 - No hay indicadores (cumplimiento, MTBF, MTTR), repuestos ni costos.
 - El portal del cliente no cambia.
