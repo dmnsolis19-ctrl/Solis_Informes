@@ -134,7 +134,7 @@ Plan cada 30 días con ancla el 1 de marzo (visitas: 1 mar, 31 mar, 30 abr, 30 m
 
 ### Roles y sincronización
 
-Administrador y supervisor generan visitas y cierran las completadas; el técnico solo puede iniciar las visitas asignadas a él o sin responsable (el Planner las lista todas). Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Programar siguiente» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan; no se ofrece para planes del Planner ni para sus visitas. Los planes del Planner se editan desde el Planner (aunque se abran desde «Órdenes y mantenimiento»), no con el editor genérico. Al cambiar el técnico, la plantilla, el alcance o el nombre de un plan, las visitas futuras «Planificada» sin edición manual se actualizan; mover la fecha o cambiar el responsable de una visita a mano la marca como edición manual y el calendario ya no la cancela. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
+Administrador y supervisor generan visitas y cierran las completadas; el técnico solo puede iniciar las visitas asignadas a él o sin responsable (el Planner las lista todas) y abre los planes en solo lectura («Ver plan»: campos deshabilitados, próxima visita e historial de anclas, sin guardar). Los guardados no sobrescriben registros modificados en otro dispositivo. No hay migración de datos: el botón «Programar siguiente» de «Órdenes y mantenimiento» sigue disponible para órdenes sin plan; no se ofrece para planes del Planner ni para sus visitas. Los planes del Planner se editan desde el Planner (aunque se abran desde «Órdenes y mantenimiento»), no con el editor genérico. Al cambiar el técnico, la plantilla, el alcance o el nombre de un plan, las visitas futuras «Planificada» sin edición manual se actualizan; mover la fecha o cambiar el responsable de una visita a mano la marca como edición manual y el calendario ya no la cancela. El resumen diario por correo incluye las visitas del Planner (los planes no aparecen).
 
 ### Vista de calendario
 
@@ -147,9 +147,21 @@ Arriba de los filtros, el selector **Lista | Calendario** cambia la forma de ver
 - En el móvil, en lugar de las etiquetas cada día muestra un contador y el detalle está en la lista del día elegido.
 - Abrir el calendario no genera ni cierra visitas distintas de las de la lista.
 
+### Carga por técnico
+
+El selector **Lista | Calendario | Carga** muestra en «Carga» una tabla con un responsable por fila. Las columnas son «Vencidas» (visitas abiertas con fecha anterior a hoy) y las 6 semanas que parten el lunes de la semana actual («Sem. 9 nov»). Cada celda es el número de visitas abiertas (Planificada o En curso) de ese responsable en esa semana; el tono es relativo al máximo de la tabla y el número siempre se ve.
+
+- El responsable es la cuenta (se muestra su correo) o, si no hay, el nombre escrito; sin ninguno aparece «Sin técnico». Los filtros de técnico, cliente y equipo se aplican igual.
+- Al pulsar una celda se listan debajo sus visitas (por fecha y prioridad) con las mismas acciones que la lista. Sin selección se lee «Elige una celda para ver sus visitas.»
+- En el móvil la tabla se desplaza dentro de su recuadro y la columna del nombre queda fija.
+
+### Reasignar una visita
+
+Administradores, supervisores y el modo local ven «Reasignar» en las visitas Planificadas (lista, calendario y carga). El diálogo ofrece las personas de la empresa (correo y rol), «Sin técnico» y, sin sesión, un campo «Responsable». La visita queda con edición manual: «Correr calendario» y los cambios del plan ya no la tocan. Si la visita cambió en otro dispositivo o ya no está Planificada, se avisa sin guardar. Los técnicos no ven el botón: el servidor no les permite asignar visitas a otros.
+
 ### Limitaciones de la fase 1
 
-- No hay vista de carga por técnico, vista semanal ni arrastrar para reprogramar visitas en el calendario.
+- No hay vista semanal ni arrastrar para reprogramar visitas en el calendario; la carga por técnico no tiene capacidades configurables ni reasignación en bloque.
 - No hay mantenimiento por horas de operación.
 - No hay indicadores (cumplimiento, MTBF, MTTR), repuestos ni costos.
 - El portal del cliente no cambia.
