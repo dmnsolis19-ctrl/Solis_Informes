@@ -451,3 +451,208 @@ test('el calendario avisa cuando los filtros no dejan visitas y abre el informe 
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+// Carga por técnico y reasignar. Fechas relativas a hoy (del navegador, que puede tener el reloj fijado).
+async function loadFixture(page, {menu = false} = {}) {
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  if (menu) await page.click('[data-action=menu]');
+  await createCompany(page);
+  const info = await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {addDays} = await import('/js/planner.js'), {localDate} = await import('/js/domain.js');
+    const companyId = (await db.all('companies'))[0].id, today = localDate();
+    const customer = Object.assign(newCatalog('customers', companyId), {name: 'Cliente Carga'}); await db.saveEntity('customers', customer);
+    const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Carga', tag: 'EQ-CAR', customerId: customer.id}); await db.saveEntity('equipment', asset);
+    const plan = Object.assign(newCatalog('workOrders', companyId), {name: 'Plan carga', type: 'Plan de mantenimiento', customerId: customer.id, equipmentId: asset.id, anchorDate: addDays(today, 400), dueDate: addDays(today, 400), intervalDays: '30', status: 'Planificada', planState: 'Activo', owner: 'Ana Pérez', ownerId: 'u-ana', scope: 'Revisar sellos', reportTemplate: 'general'});
+    await db.saveEntity('workOrders', plan);
+    const visit = (name, dueDate, extra = {}) => db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name, type: 'Orden de trabajo', planId: plan.id, customerId: customer.id, equipmentId: asset.id, dueDate, status: 'Planificada', priority: 'Media'}, extra));
+    const ana = {ownerId: 'u-ana', owner: 'Ana Pérez'}, beto = {owner: 'Beto Soto'};
+    await visit('Visita A1', today, ana); await visit('Visita A2', addDays(today, 8), ana); await visit('Visita A3', addDays(today, -3), ana);
+    await visit('Visita B1', addDays(today, 8), beto); await visit('Visita N1', today); await visit('Visita Hecha', today, {...ana, status: 'Completada'});
+    await visit('Visita Lejana', addDays(today, 70), ana);
+    // Columna de semana esperada (índice desde el lunes de esta semana) calculada con aritmética propia.
+    const dn = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 864e5, dow = (new Date(dn(today) * 864e5).getUTCDay() + 6) % 7;
+    return {today, later: addDays(today, 8), laterCol: Math.floor((dow + 8) / 7)};
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  return info;
+}
+const openLoad = async page => {
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('[data-planner-visit]').first().waitFor();
+  await page.getByRole('button', {name: 'Carga', exact: true}).click();
+  await page.locator('.load-table').waitFor();
+};
+const loadRow = (page, name) => page.locator('.load-table tbody tr', {has: page.locator(`th:text-is("${name}")`)});
+const cellAt = (page, name, col) => loadRow(page, name).locator('td').nth(col === 'overdue' ? 0 : col + 1).locator('button');
+const asUser = (page, user) => page.evaluate(async u => { (await import('/js/sync.js')).syncState.user = u; }, user);
+const people = [{id: 'u-ana', email: 'ana@e.test', role: 'technician'}, {id: 'u-sup', email: 'sup@e.test', role: 'supervisor'}];
+const woRow = (page, name) => page.evaluate(async n => { const db = await import('/js/store.js'); return (await db.all('workOrders')).find(r => r.name === n); }, name);
+
+test('la vista Carga cuenta las visitas abiertas por técnico y semana, y la celda elegida lista sus visitas', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await openLoad(page);
+  assert.equal(await page.getByRole('button', {name: 'Carga', exact: true}).getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(await page.locator('.load-table thead th').allTextContents().then(a => a.slice(0, 2)), ['Técnico', 'Vencidas']);
+  assert.equal(await page.locator('.load-table thead th').count(), 8);
+  assert.match(await page.locator('.load-table thead th').nth(2).textContent(), /^Sem\. \d{1,2} [a-z]{3}$/);
+  assert.deepEqual(await page.locator('.load-table tbody th').allTextContents(), ['Ana Pérez', 'Beto Soto', 'Sin técnico']);
+  assert.equal(await cellAt(page, 'Ana Pérez', 'overdue').textContent(), '1');
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).textContent(), '1', 'la completada y la lejana no cuentan');
+  assert.equal(await cellAt(page, 'Ana Pérez', d.laterCol).textContent(), '1');
+  assert.equal(await cellAt(page, 'Beto Soto', d.laterCol).textContent(), '1');
+  assert.equal(await cellAt(page, 'Sin técnico', 0).textContent(), '1');
+  assert.match(await cellAt(page, 'Ana Pérez', 0).getAttribute('aria-label'), /^Ana Pérez, semana del \d{1,2} de [a-zé]+: 1 visita$/);
+  assert.equal(await cellAt(page, 'Ana Pérez', 'overdue').getAttribute('aria-label'), 'Ana Pérez, vencidas: 1 visita');
+  assert.match(await cellAt(page, 'Ana Pérez', 0).getAttribute('class'), /load-3/);
+  assert.match(await cellAt(page, 'Beto Soto', d.laterCol).getAttribute('class'), /load-\d/);
+  assert.match(await cellAt(page, 'Sin técnico', 3).getAttribute('class'), /load-0/);
+  await page.getByText('Elige una celda para ver sus visitas.').waitFor();
+  assert.equal(await page.locator('[data-planner-visit]').count(), 0);
+  await cellAt(page, 'Ana Pérez', 0).click();
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).getAttribute('aria-pressed'), 'true');
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).evaluate(el => document.activeElement === el), true);
+  assert.equal(await page.locator('[data-planner-visit]').count(), 1);
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).waitFor();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).getByRole('button', {name: 'Reasignar'}).waitFor();
+  await cellAt(page, 'Ana Pérez', 'overdue').click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A3'}).waitFor();
+  assert.equal(await page.locator('[data-planner-visit]').count(), 1);
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).getAttribute('aria-pressed'), 'false');
+  await cellAt(page, 'Ana Pérez', 'overdue').click();
+  await page.getByText('Elige una celda para ver sus visitas.').waitFor();
+  // el filtro de cliente que no coincide deja la tabla vacía con aviso
+  await page.selectOption('[data-ops-filter=equipmentId]', {index: 1});
+  await page.locator('.load-table').waitFor();
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.load-table').waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Carga', exact: true}).getAttribute('aria-pressed'), 'true');
+  await page.getByRole('button', {name: 'Lista', exact: true}).click();
+  await page.locator('.planner-section h2:text-is("Hoy")').waitFor();
+  assert.equal(await page.locator('.load-table').count(), 0);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('reasignar una visita en modo local cambia de fila, marca la edición manual y se puede cancelar con Escape', async () => {
+  const {context, page} = await newPage();
+  await loadFixture(page);
+  await openLoad(page);
+  await cellAt(page, 'Ana Pérez', 0).click();
+  const card = page.locator('[data-planner-visit]', {hasText: 'Visita A1'});
+  await card.getByRole('button', {name: 'Reasignar'}).click();
+  await page.getByRole('dialog', {name: 'Reasignar visita'}).waitFor();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.modal').count(), 0);
+  assert.equal((await woRow(page, 'Visita A1')).manualEdit || '', '');
+  await card.getByRole('button', {name: 'Reasignar'}).click();
+  await page.fill('input[name=owner]', 'Beto Soto');
+  await page.getByRole('button', {name: 'Reasignar', exact: true}).last().dblclick();
+  await page.locator('.modal').waitFor({state: 'detached'});
+  const row = await woRow(page, 'Visita A1');
+  assert.equal(row.owner, 'Beto Soto'); assert.equal(row.ownerId || '', ''); assert.equal(row.manualEdit, '1');
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).textContent(), '0');
+  assert.equal(await cellAt(page, 'Beto Soto', 0).textContent(), '1');
+  assert.deepEqual(await page.locator('.load-table tbody th').allTextContents(), ['Ana Pérez', 'Beto Soto', 'Sin técnico']);
+  assert.equal(await page.locator('[data-planner-visit]').count(), 0, 'la celda elegida quedó sin esa visita y se ve la guía o la lista vacía');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('un supervisor con sesión elige a la persona de una lista; sin cambios y cambios concurrentes se avisan sin escribir', async () => {
+  const {context, page} = await newPage();
+  await page.route('**/api/people*', route => route.fulfill({contentType: 'application/json', body: JSON.stringify({users: people})}));
+  await loadFixture(page);
+  await openLoad(page);
+  await asUser(page, {id: 'u-sup', role: 'supervisor', email: 'sup@e.test', companyIds: ['*']});
+  await cellAt(page, 'Sin técnico', 0).click();
+  const card = page.locator('[data-planner-visit]', {hasText: 'Visita N1'});
+  await card.getByRole('button', {name: 'Reasignar'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Reasignar visita'});
+  await dlg.getByText('Sin técnico', {exact: true}).waitFor();
+  assert.equal(await dlg.getByRole('radio', {name: 'Sin técnico'}).isChecked(), true);
+  assert.deepEqual(await dlg.locator('label span').allTextContents(), ['Sin técnico', 'ana@e.test · Técnico', 'sup@e.test · Supervisor']);
+  await dlg.getByRole('radio', {name: /sup@e\.test/}).check();
+  await dlg.getByRole('button', {name: 'Reasignar', exact: true}).click();
+  await page.locator('.modal').waitFor({state: 'detached'});
+  const row = await woRow(page, 'Visita N1');
+  assert.equal(row.ownerId, 'u-sup'); assert.equal(row.owner, 'sup@e.test'); assert.equal(row.manualEdit, '1');
+  assert.deepEqual(await page.locator('.load-table tbody th').allTextContents(), ['ana@e.test', 'Beto Soto', 'sup@e.test'], 'con la lista de personas, la cuenta se muestra por su correo');
+  // mismo responsable: sin cambios
+  await asUser(page, {id: 'u-sup', role: 'supervisor', email: 'sup@e.test', companyIds: ['*']}); // la sincronización sin servidor quita la sesión simulada
+  await cellAt(page, 'sup@e.test', 0).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita N1'}).getByRole('button', {name: 'Reasignar'}).click();
+  assert.equal(await dlg.getByRole('radio', {name: /sup@e\.test/}).isChecked(), true);
+  const before = (await woRow(page, 'Visita N1')).updatedAt;
+  await dlg.getByRole('button', {name: 'Reasignar', exact: true}).click();
+  await page.getByText('Sin cambios').waitFor();
+  assert.equal((await woRow(page, 'Visita N1')).updatedAt, before);
+  // cambio concurrente en otro dispositivo (el almacén cambia detrás de la pantalla)
+  await asUser(page, {id: 'u-sup', role: 'supervisor', email: 'sup@e.test', companyIds: ['*']});
+  await page.locator('[data-planner-visit]', {hasText: 'Visita N1'}).getByRole('button', {name: 'Reasignar'}).click();
+  await dlg.getByRole('radio', {name: /ana@e\.test/}).check();
+  await page.evaluate(async () => { const db = await import('/js/store.js'), r = (await db.all('workOrders')).find(x => x.name === 'Visita N1'); await db.saveEntity('workOrders', {...r, priority: 'Alta'}); });
+  await dlg.getByRole('button', {name: 'Reasignar', exact: true}).click();
+  await page.getByText('Esta visita cambió en otro dispositivo. Actualiza la pantalla e inténtalo de nuevo.').waitFor();
+  const after = await woRow(page, 'Visita N1');
+  assert.equal(after.ownerId, 'u-sup'); assert.equal(after.priority, 'Alta');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('un técnico no ve Reasignar y abre los planes en solo lectura', async () => {
+  const {context, page} = await newPage();
+  await page.route('**/api/people*', route => route.fulfill({status: 403, contentType: 'application/json', body: '{"error":"no"}'}));
+  await loadFixture(page);
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('[data-planner-visit]').first().waitFor();
+  await asUser(page, {id: 'u-ana', role: 'technician', email: 'ana@e.test', companyIds: ['*']});
+  await page.getByRole('button', {name: 'Carga', exact: true}).click();
+  await cellAt(page, 'Ana Pérez', 0).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Reasignar'}).count(), 0);
+  await page.getByRole('button', {name: 'Lista', exact: true}).click();
+  await page.locator('[data-planner-visit]').first().waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Reasignar'}).count(), 0);
+  assert.equal(await page.getByRole('button', {name: 'Pausar plan'}).count(), 0);
+  assert.equal(await page.getByRole('button', {name: 'Editar plan'}).count(), 0);
+  await page.getByRole('button', {name: 'Ver plan'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Plan de mantenimiento'});
+  await dlg.getByText('Solo un administrador o supervisor puede editar este plan.').waitFor();
+  assert.equal(await dlg.locator('input').count() >= 6, true);
+  assert.equal(await dlg.locator('input:not([disabled]),textarea:not([disabled]),select:not([disabled])').count(), 0);
+  assert.equal(await dlg.locator('input').first().inputValue(), 'Plan carga');
+  assert.equal(await dlg.locator('textarea').inputValue(), 'Revisar sellos');
+  assert.equal(await dlg.getByLabel('Estado del plan').inputValue(), 'Activo');
+  assert.equal(await dlg.getByLabel('Periodicidad (días)').inputValue(), '30');
+  assert.equal(await page.locator('[data-action=planner-plan-save]').count(), 0);
+  await dlg.getByRole('button', {name: 'Cerrar', exact: true}).last().click();
+  assert.equal(await page.locator('.modal').count(), 0);
+  // el supervisor sí edita
+  await asUser(page, {id: 'u-sup', role: 'supervisor', email: 'sup@e.test', companyIds: ['*']});
+  await page.getByRole('button', {name: 'Lista', exact: true}).click();
+  await page.getByRole('button', {name: 'Editar plan'}).click();
+  await page.getByRole('dialog', {name: 'Editar plan'}).waitFor();
+  assert.equal(await page.locator('[data-action=planner-plan-save]').count(), 1);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('la vista Carga no desborda la página a 375 px y la tabla se desplaza dentro de su contenedor', async () => {
+  const {context, page} = await newPage({hasTouch: true});
+  await page.setViewportSize({width: 375, height: 800});
+  await loadFixture(page, {menu: true});
+  await page.click('[data-action=menu]');
+  await openLoad(page);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  const wrap = await page.locator('.load-wrap').evaluate(el => ({scroll: el.scrollWidth, client: el.clientWidth, over: getComputedStyle(el).overflowX}));
+  assert.equal(wrap.over, 'auto'); assert.ok(wrap.scroll > wrap.client, JSON.stringify(wrap));
+  const box = await cellAt(page, 'Ana Pérez', 0).boundingBox();
+  assert.ok(box.width >= 44 && box.height >= 44, JSON.stringify(box));
+  await cellAt(page, 'Ana Pérez', 0).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).getByRole('button', {name: 'Reasignar'}).waitFor();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});

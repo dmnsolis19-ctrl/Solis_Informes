@@ -52,7 +52,22 @@ const weeks=[];for(let r=0;r<rows;r++){const week=[];for(let c=0;c<7;c++){const 
 return {year,month,weeks};}
 // Tono visual de una visita: vencida (abierta con fecha pasada), en curso, hecha o planificada.
 export function visitTone(visit,today){const open=visit.status==='Planificada'||visit.status==='En curso';if(open&&visit.dueDate<today)return 'overdue';if(visit.status==='En curso')return 'progress';if(visit.status==='Completada')return 'done';return 'planned';}
+
+// Carga por técnico (puro). Semanas de lunes a domingo con aritmética UTC sobre cadenas 'AAAA-MM-DD' (sin zona horaria del dispositivo).
+const MON=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],NO_OWNER='Sin técnico';
+export const mondayOf=iso=>{const n=dayNum(iso);return isoOf((n-(new Date(n*864e5).getUTCDay()+6)%7)*864e5);};
+const ownerKey=v=>v.ownerId||String(v.owner||'').trim().toLowerCase();
+const ownerName=(v,people)=>{const p=v.ownerId&&people.find(x=>x.id===v.ownerId);return p?.email||String(v.owner||'').trim()||(v.ownerId?'Técnico asignado':NO_OWNER);};
+// Visitas abiertas con fecha válida (sin planes) que pasan los filtros, con su columna: 'overdue' o el índice de semana (omite las que quedan fuera del rango).
+function loadEntries(visits,today,filters,weeks){const f=['ownerId','customerId','equipmentId'].filter(k=>filters[k]),start=dayNum(mondayOf(today)),out=[];for(const v of visits){if(v.type==='Plan de mantenimiento'||!['Planificada','En curso'].includes(v.status)||!validIso(v.dueDate)||f.some(k=>v[k]!==filters[k]))continue;const col=v.dueDate<today?'overdue':Math.floor((dayNum(v.dueDate)-start)/7);if(col!=='overdue'&&(col<0||col>=weeks))continue;out.push({v,col,key:ownerKey(v)});}return out;}
+export function workloadTable(visits,today,people=[],filters={},weeks=6){const start=dayNum(mondayOf(today)),cols=Array.from({length:weeks},(_,i)=>{const monday=isoOf((start+i*7)*864e5);return {monday,label:`Sem. ${+monday.slice(8)} ${MON[+monday.slice(5,7)-1]}`};}),rows=new Map();
+for(const {v,col,key} of loadEntries(visits,today,filters,weeks)){let r=rows.get(key);if(!r){r={key,name:ownerName(v,people),overdue:0,cells:Array(weeks).fill(0),total:0};rows.set(key,r);}if(col==='overdue')r.overdue++;else r.cells[col]++;r.total++;}
+const list=[...rows.values()].sort((a,b)=>(a.key===''?1:0)-(b.key===''?1:0)||a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'}));
+return {weeks:cols,rows:list,max:list.reduce((m,r)=>Math.max(m,r.overdue,...r.cells),0)};}
+export function workloadCell(visits,today,people,key,col,filters={},weeks=6){return loadEntries(visits,today,filters,weeks).filter(x=>x.key===key&&x.col===col).map(x=>x.v).sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:(PRIO[a.priority]??4)-(PRIO[b.priority]??4)||String(a.name||'').localeCompare(String(b.name||''),'es',{numeric:true,sensitivity:'base'}));}
+// Reasigna una visita Planificada: copia con el nuevo responsable y edición manual (protegida del calendario y del plan), o null si no cambia nada.
+export function reassignVisit(visit,person){if(visit.status!=='Planificada')return null;const ownerId=person?.ownerId||'',owner=String(person?.owner||'').trim();if((visit.ownerId||'')===ownerId&&(ownerId||String(visit.owner||'').trim()===owner))return null;return {...visit,ownerId,owner,manualEdit:'1'};}
 // Datos de un plan para mostrarlo en solo lectura (técnicos).
 export function planReadonlyData(plan,visits,equipment,today,people=[]){const asset=equipment.find(x=>x.id===plan.equipmentId),state=plan.planState||'Activo',t=templates[plan.reportTemplate]||templates.general;let history=[];try{const h=JSON.parse(plan.anchorHistory||'[]');if(Array.isArray(h))history=h.filter(x=>x&&x.from&&x.to).map(x=>({from:x.from,to:x.to}));}catch{}
 const next=state==='Activo'?visits.filter(v=>v.planId===plan.id&&['Planificada','En curso'].includes(v.status)&&validIso(v.dueDate)&&v.dueDate>=today).map(v=>v.dueDate).sort()[0]||'':'';
-return {name:plan.name||'',equipment:asset?(asset.tag?asset.tag+' · ':'')+asset.name:'Equipo no disponible',anchorDate:planAnchor(plan)||'',intervalDays:String(plan.intervalDays||''),owner:people.find(p=>p.id===plan.ownerId)?.email||plan.owner||(plan.ownerId?'Técnico asignado':'Sin técnico'),template:t.shortLabel||t.label,scope:plan.scope||'',state,next,history};}
+return {name:plan.name||'',equipment:asset?(asset.tag?asset.tag+' · ':'')+asset.name:'Equipo no disponible',anchorDate:planAnchor(plan)||'',intervalDays:String(plan.intervalDays||''),owner:people.find(p=>p.id===plan.ownerId)?.email||plan.owner||(plan.ownerId?'Técnico asignado':NO_OWNER),template:t.shortLabel||t.label,scope:plan.scope||'',state,next,history};}

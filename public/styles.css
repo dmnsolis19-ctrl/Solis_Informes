@@ -84,3 +84,24 @@
 .cal-nav .btn{min-width:44px}
 .seg{display:flex;width:100%}.seg button{flex:1}
 }
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:root{--load-1-bg:#dff1ed;--load-1-fg:#0b5a4c;--load-2-bg:#9bd8c9;--load-2-fg:#083f35;--load-3-bg:#0b7664;--load-3-fg:#fff}
+.load-wrap{overflow-x:auto;margin:0 0 24px;border:1px solid var(--line);border-radius:8px;background:var(--cal-cell)}
+.load-wrap:focus-visible{outline-offset:2px}
+.load-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.load-table th,.load-table td{padding:4px;border-bottom:1px solid var(--line);text-align:center;font-weight:650;color:var(--text)}
+.load-table thead th{background:var(--cal-cell-outside);font-size:11px;text-transform:none;color:var(--muted);white-space:nowrap;padding:8px 6px}
+.load-table tbody tr:last-child>*{border-bottom:0}
+.load-table .load-name{position:sticky;left:0;z-index:1;min-width:132px;max-width:200px;text-align:left;padding:4px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--cal-cell);box-shadow:1px 0 0 var(--line)}
+.load-table thead .load-name{background:var(--cal-cell-outside)}
+.load-cell{display:grid;place-items:center;width:100%;min-width:48px;min-height:40px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:13px;font-weight:700}
+.load-cell.load-0{font-weight:500;opacity:.6}
+.load-cell.load-1{background:var(--load-1-bg);color:var(--load-1-fg)}
+.load-cell.load-2{background:var(--load-2-bg);color:var(--load-2-fg)}
+.load-cell.load-3{background:var(--load-3-bg);color:var(--load-3-fg)}
+.load-cell.load-over{background:var(--cal-overdue-bg);color:var(--cal-overdue-fg)}
+.load-cell:hover{box-shadow:inset 0 0 0 1px var(--teal)}
+.load-cell[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--navy)}
+.load-cell:focus-visible{outline-offset:-2px}
+.plan-history{margin:0;padding-left:18px;font-size:13px}
+@media(max-width:600px){.load-table .load-name{min-width:104px;max-width:128px;padding:4px 8px}.load-cell{min-width:44px;min-height:44px}}
