@@ -134,6 +134,9 @@ test('crear un plan para dos equipos desde el diálogo genera sus visitas', asyn
   await page.locator('nav').getByText('Planner', {exact: true}).click();
   await page.getByRole('button', {name: 'Crear plan'}).first().click();
   const dialog = page.getByRole('dialog');
+  const boxes = await dialog.locator('input[name=equipmentIds]').evaluateAll(list => list.map(i => { const r = i.getBoundingClientRect(), t = i.nextElementSibling.getBoundingClientRect(); return {w: Math.round(r.width), h: Math.round(r.height), gap: Math.round(t.left - r.right), label: i.nextElementSibling.textContent.trim()}; }));
+  assert.deepEqual(boxes.map(b => b.label), ['EQ-A · Bomba A', 'EQ-B · Bomba B'], 'los equipos se listan ordenados por TAG');
+  for (const b of boxes) assert.ok(b.w <= 24 && b.h <= 24 && b.gap <= 16, 'cada cuadro de selección es pequeño y está junto a su nombre: ' + JSON.stringify(b));
   await dialog.getByLabel('Nombre del plan').fill('Mantención mensual');
   await dialog.getByLabel('Periodicidad (días)').fill('30');
   await dialog.getByRole('button', {name: 'Crear plan'}).click();

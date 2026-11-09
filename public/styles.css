@@ -39,3 +39,8 @@
 .dictate-btn{margin-top:6px;justify-self:start;border:1px solid var(--line,#d5dde2);background:#fff;color:#0e7a66;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}.dictate-btn.active{background:#c62828;border-color:#c62828;color:#fff}.dictate-btn[disabled]{opacity:.5;cursor:not-allowed}.photo-options{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 12px;font-size:13px}.photo-options .check{display:flex;gap:6px;align-items:center}[data-theme="dark"] .dictate-btn{background:#16222d;color:#5ed5b3}
 
 [hidden]{display:none!important}
+
+/* Cuadros de selección dentro de un grupo .field (p. ej. «Equipos del plan»): no heredan el estilo de campo de texto. */
+.field.evidence-links{margin-top:0}
+.field.evidence-links label{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer}
+.field.evidence-links input[type=checkbox]{width:20px;height:20px;min-height:0;min-width:20px;flex:none;padding:0;margin:0;border-radius:4px}
