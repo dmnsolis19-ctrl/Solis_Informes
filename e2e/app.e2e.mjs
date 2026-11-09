@@ -359,7 +359,8 @@ test('el calendario muestra cada visita en su día, cambia de mes y lista las vi
   assert.match(await day(d.today).getAttribute('aria-label'), /\d+ de \w+ de \d{4}, (2|3) visitas, hoy/);
   assert.equal(await day(d.today).getAttribute('aria-pressed'), 'true');
   await day(d.last).locator('.cal-chip', {hasText: 'Visita fin de mes'}).waitFor();
-  assert.equal(await page.locator('.cal-day:not(.outside)', {hasText: 'Visita mes siguiente'}).count(), 0);
+  assert.equal(await page.locator('.cal-chip', {hasText: 'Visita mes siguiente'}).count(), 0, 'la visita del 15 del mes siguiente no está en la cuadrícula de este mes');
+  assert.equal(await day(d.next).count(), 0);
   assert.equal(await page.locator('[data-planner-visit]', {hasText: 'Visita B'}).count(), 1);
   // Mes siguiente: aparece la visita del 15, vuelve al mes actual con Hoy.
   await page.getByRole('button', {name: 'Mes siguiente'}).click();
@@ -378,7 +379,9 @@ test('el calendario muestra cada visita en su día, cambia de mes y lista las vi
   await page.getByRole('button', {name: 'Mes anterior'}).click();
   const prev = new Date(d.year, d.month - 2, 1);
   await page.getByRole('heading', {name: monthTitle(prev.getFullYear(), prev.getMonth() + 1), level: 3}).waitFor();
-  assert.equal(await page.locator('.cal-chip').count(), 0);
+  assert.equal(await page.locator('.cal-day:not(.outside) .cal-chip').count(), 0);
+  // Los días vecinos atenuados no quedan vacíos: si hoy cae en el relleno de esa cuadrícula, conserva sus etiquetas.
+  if (await day(d.today).count()) { assert.equal(await day(d.today).evaluate(el => el.classList.contains('outside')), true); await day(d.today).locator('.cal-chip', {hasText: 'Visita A'}).waitFor(); }
   await page.getByText('Elige un día para ver sus visitas.').waitFor();
   await page.getByRole('button', {name: 'Hoy', exact: true}).click();
   await page.getByRole('heading', {name: monthTitle(d.year, d.month), level: 3}).waitFor();
@@ -410,6 +413,41 @@ test('el calendario del Planner no desborda a 375 px y muestra un contador por d
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.locator('[data-planner-visit]', {hasText: 'Visita A'}).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('el calendario avisa cuando los filtros no dejan visitas y abre el informe de una visita completada', async () => {
+  const {context, page} = await newPage();
+  const d = await calendarFixture(page);
+  await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), companyId = (await db.all('companies'))[0].id;
+    await db.saveEntity('equipment', Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Sin Visitas', tag: 'EQ-VACIO'}));
+    const eq = (await db.all('equipment')).find(x => x.tag === 'EQ-CAL'), site = Object.assign(newCatalog('sites', companyId), {name: 'Planta Calendario', customerId: eq.customerId}); await db.saveEntity('sites', site); await db.saveEntity('equipment', {...eq, siteId: site.id});
+    localStorage.setItem('solis.plannerView', 'calendar');
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.cal-grid').waitFor();
+  await page.selectOption('[data-ops-filter="equipmentId"]', {label: 'EQ-VACIO · Equipo Sin Visitas'});
+  await page.getByText('Ninguna visita coincide con los filtros.').waitFor();
+  assert.equal(await page.locator('.cal-chip').count(), 0);
+  await page.getByRole('button', {name: 'Quitar filtros'}).click();
+  await page.locator('.cal-day', {hasText: 'Visita B'}).first().waitFor();
+  assert.equal(await page.getByText('Ninguna visita coincide con los filtros.').count(), 0);
+  // Visita completada con informe vivo: ofrece «Abrir informe» y no «Iniciar visita»; abrirlo no cambia la visita.
+  await page.locator('[data-planner-visit]', {hasText: 'Visita B'}).getByRole('button', {name: 'Iniciar visita'}).click();
+  await until(page, async () => (await (await import('/js/store.js')).all('workOrders')).some(r => r.planId && r.status === 'En curso' && r.reportId));
+  const before = await page.evaluate(async () => { const db = await import('/js/store.js'), v = (await db.all('workOrders')).find(r => r.status === 'En curso'); await db.saveEntity('workOrders', {...v, status: 'Completada', notes: 'Realizada.'}); return v.id; });
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  const card = page.locator('[data-planner-visit]', {hasText: 'Visita B'});
+  await card.waitFor();
+  assert.equal(await card.getByRole('button', {name: 'Iniciar visita'}).count(), 0);
+  await card.getByRole('button', {name: 'Abrir informe'}).click();
+  await page.locator('#content [data-field]').first().waitFor();
+  const after = await page.evaluate(async id => (await (await import('/js/store.js')).get('workOrders', id)).status, before);
+  assert.equal(after, 'Completada');
   assert.deepEqual(page.errors, []);
   await context.close();
 });

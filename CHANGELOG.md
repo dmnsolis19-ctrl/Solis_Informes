@@ -7,7 +7,7 @@
 - En móvil (hasta 600 px) las etiquetas se reemplazan por un contador por día y el detalle está en la lista del día elegido; sin desplazamiento horizontal.
 - Corrección del diálogo «Crear plan»: los cuadros de selección de equipos salían enormes porque heredaban el estilo de los campos de texto; ahora miden 20 px y quedan junto a su nombre. La lista de equipos se ordena por TAG.
 - Sin migración D1, sin cambios en IndexedDB ni en la sincronización: el calendario es otra vista de las mismas visitas y no cambia cuándo se generan o cierran.
-- 214 pruebas automáticas superadas y 12 pruebas de navegador superadas.
+- 217 pruebas automáticas superadas y 13 pruebas de navegador superadas.
 
 # 3.7.0 · Planner de mantenimiento · 9 de noviembre de 2026
 

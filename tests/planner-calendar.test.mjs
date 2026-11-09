@@ -103,3 +103,16 @@ test('visitTone: vencida, en curso, hecha y planificada',()=>{
   assert.equal(visitTone(v({status:'Planificada',dueDate:TODAY}),TODAY),'planned');
   assert.equal(visitTone(v({status:'Planificada',dueDate:'2026-12-01'}),TODAY),'planned');
 });
+
+import {calendarSelection} from '../public/js/planner-ui.js';
+test('calendarSelection: sin estado, el mes de hoy con hoy seleccionado',()=>{
+  assert.deepEqual(calendarSelection({},TODAY),{month:{year:2026,month:11},day:TODAY});
+});
+test('calendarSelection: un día elegido en otro mes fija ese mes y ese día',()=>{
+  assert.deepEqual(calendarSelection({plannerDay:'2027-01-15'},TODAY),{month:{year:2027,month:1},day:'2027-01-15'});
+});
+test('calendarSelection: un mes explícito sin hoy no deja día elegido; con hoy lo elige',()=>{
+  assert.deepEqual(calendarSelection({plannerMonth:{year:2026,month:12}},TODAY),{month:{year:2026,month:12},day:''});
+  assert.deepEqual(calendarSelection({plannerMonth:{year:2026,month:11}},TODAY).day,TODAY);
+  assert.deepEqual(calendarSelection({plannerMonth:{year:2026,month:12},plannerDay:'2026-11-20'},TODAY).day,'');
+});

@@ -9,7 +9,7 @@ Además de la lista por urgencia, quien planifica ve las visitas en un calendari
 ## Decisiones
 
 - **Selector «Lista | Calendario»** en la cabecera del Planner. La elección se recuerda por dispositivo en `localStorage` (clave `solis.plannerView`, con `try/catch`; sin almacenamiento funciona igual). Por defecto, Lista.
-- **Mes en cuadrícula, semana desde el lunes** (es-CL): 7 columnas, 5 o 6 filas, días de los meses vecinos atenuados. Botones «Mes anterior», «Mes siguiente» y «Hoy». Se puede navegar a cualquier mes (el generador solo crea 90 días hacia adelante; los meses sin visitas se ven vacíos, sin error).
+- **Mes en cuadrícula, semana desde el lunes** (es-CL): 7 columnas, 4 a 6 filas, días de los meses vecinos atenuados. Botones «Mes anterior», «Mes siguiente» y «Hoy». Se puede navegar a cualquier mes (el generador solo crea 90 días hacia adelante; los meses sin visitas se ven vacíos, sin error).
 - **Contenido de cada día:** hasta 3 visitas como etiquetas (nombre; TAG del equipo si cabe) y «+N más». Estados: `Planificada` neutra, `En curso` destacada, `Completada` verde, vencida (Planificada/En curso con fecha < hoy) en rojo; las `Cancelada` no se muestran. Mismos filtros que la lista (técnico, cliente, equipo) y mismo alcance por empresa.
 - **Día seleccionado:** pulsar un día lo selecciona (por defecto, hoy si está en el mes) y debajo de la cuadrícula se listan **todas** sus visitas con las mismas tarjetas y acciones que la lista («Iniciar visita», «Abrir informe», «Abrir / editar»). No hay arrastrar y soltar en esta fase.
 - **Móvil (≤ 600 px):** las etiquetas se sustituyen por un contador por día; el detalle está en la lista del día seleccionado. Sin desplazamiento horizontal de la página.
