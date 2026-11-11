@@ -5,7 +5,7 @@
 - «Exportar CSV» con el detalle de las visitas medidas (separador «;», UTF-8 con BOM, celdas protegidas contra fórmulas); archivo `planner-indicadores-AAAA-MM-DD.csv`.
 - Estado vacío claro, tabla con desplazamiento propio en móvil (sin desbordar la página) y tema oscuro.
 - Sin migración D1, sin cambios en IndexedDB ni en la sincronización: todo se calcula en el cliente con las visitas y los informes existentes.
-- 257 pruebas automáticas superadas y 23 pruebas de navegador superadas.
+- 259 pruebas automáticas superadas y 24 pruebas de navegador superadas.
 
 # 3.9.0 · Carga por técnico y reasignar · 9 de noviembre de 2026
 

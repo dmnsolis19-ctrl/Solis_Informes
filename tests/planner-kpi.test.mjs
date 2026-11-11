@@ -54,6 +54,15 @@ test('denominadores 0: porcentajes y atraso son null, nunca 0 ni NaN',()=>{
   const only=stats([[v()]]);// solo una vencida abierta: cumplimiento 0 %, puntualidad sin datos
   assert.deepEqual([only.compliancePct,only.punctualityPct,only.avgLateDays],[0,null,null]);
 });
+test('una fecha de realización futura se trata como desconocida y no distorsiona el atraso',()=>{
+  const s=stats([done('2026-11-01','2062-11-03'),done('2026-11-02','2026-11-04'),done('2026-11-03','2026-11-03')]);
+  assert.deepEqual([s.unknownDate,s.onTime,s.late,s.avgLateDays,s.completed],[1,1,1,2,3]);
+});
+test('100 % y 0 % solo cuando son exactos',()=>{
+  const mk=(c,t)=>stats([...Array.from({length:c},()=>done('2026-11-01','2026-11-01')),...Array.from({length:t-c},()=>[v()])]);
+  assert.deepEqual([[199,200],[1,201],[0,5],[5,5]].map(([c,t])=>mk(c,t).compliancePct),[99,1,0,100]);
+  const s=mk(199,200);assert.equal(s.rows[0].compliancePct,99);assert.equal(s.months.at(-1).pct,99);
+});
 test('redondeo de porcentajes a enteros',()=>{
   const mk=(c,t)=>stats([...Array.from({length:c},()=>done('2026-11-01','2026-11-01')),...Array.from({length:t-c},()=>[v()])]).compliancePct;
   assert.deepEqual([mk(1,3),mk(2,3),mk(1,8),mk(5,6),mk(6,6),mk(0,4)],[33,67,13,83,100,0]);

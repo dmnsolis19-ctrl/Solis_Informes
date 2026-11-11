@@ -79,7 +79,7 @@ const next=state==='Activo'?visits.filter(v=>v.planId===plan.id&&['Planificada',
 return {name:plan.name||'',equipment:asset?(asset.tag?asset.tag+' · ':'')+asset.name:'Equipo no disponible',anchorDate:planAnchor(plan)||'',intervalDays:String(plan.intervalDays||''),owner:people.find(p=>p.id===plan.ownerId)?.email||plan.owner||(plan.ownerId?'Técnico asignado':NO_OWNER),template:t.shortLabel||t.label,scope:plan.scope||'',state,next,history};}
 
 // Indicadores de cumplimiento (puros). Ventana [hoy-(días-1), hoy] por fecha programada, con aritmética entera UTC sobre cadenas 'AAAA-MM-DD'.
-const GROUPS=['ownerId','customerId','equipmentId'],byName=(a,b)=>a.localeCompare(b,'es',{numeric:true,sensitivity:'base'}),pct=(a,b)=>b?Math.round(100*a/b):null;
+const GROUPS=['ownerId','customerId','equipmentId'],byName=(a,b)=>a.localeCompare(b,'es',{numeric:true,sensitivity:'base'}),pct=(a,b)=>{if(!b)return null;const p=Math.round(100*a/b);return a<b&&p===100?99:a>0&&p===0?1:p;};
 // Fecha de realización: serviceDate del informe vinculado vivo, o '' si no hay o no es una fecha válida.
 export function completionDate(visit,reports){const r=visit.reportId&&reports.find(x=>x.id===visit.reportId&&!x._sync?.deleted);return r&&validIso(r.serviceDate)?r.serviceDate:'';}
 export const complianceFileName=today=>`planner-indicadores-${today}.csv`;
@@ -87,7 +87,7 @@ export function complianceStats(visits,reports,today,days,people=[],filters={},e
 const s={from,to:ok?today:'',days:span,measured:0,completed:0,onTime:0,late:0,unknownDate:0,openOverdue:0,oldestOverdueDays:null,compliancePct:null,punctualityPct:null,avgLateDays:null,rows:[],months:[],details:[]},rows=new Map(),months=new Map(),late=[];
 if(ok){let y=+from.slice(0,4),m=+from.slice(5,7);const last=today.slice(0,7);for(;;){const ym=`${y}-${String(m).padStart(2,'0')}`;months.set(ym,{ym,label:`${MON[m-1]} ${y}`,measured:0,completed:0,pct:null});if(ym>=last)break;({year:y,month:m}=shiftMonth(y,m,1));}}
 for(const v of ok?visits:[]){if(v.type==='Plan de mantenimiento'||!validIso(v.dueDate)||v.dueDate<from||v.dueDate>today||f.some(k=>v[k]!==filters[k]))continue;const finished=v.status==='Completada',open=['Planificada','En curso'].includes(v.status)&&v.dueDate<today;if(!finished&&!open)continue;
-const r2=finished&&v.reportId&&live.get(v.reportId),done=finished&&r2&&validIso(r2.serviceDate)?r2.serviceDate:'',key=ownerKey(v);let row=rows.get(key);if(!row){row={key,name:ownerName(v,people),account:!!v.ownerId,measured:0,completed:0,onTime:0,late:0,openOverdue:0,compliancePct:null};rows.set(key,row);}
+const r2=finished&&v.reportId&&live.get(v.reportId),done=finished&&r2&&validIso(r2.serviceDate)&&r2.serviceDate<=today?r2.serviceDate:'',key=ownerKey(v);let row=rows.get(key);if(!row){row={key,name:ownerName(v,people),account:!!v.ownerId,measured:0,completed:0,onTime:0,late:0,openOverdue:0,compliancePct:null};rows.set(key,row);}
 const mo=months.get(v.dueDate.slice(0,7));let lateDays='';s.measured++;row.measured++;mo.measured++;
 if(finished){s.completed++;row.completed++;mo.completed++;if(!done)s.unknownDate++;else if(done<=v.dueDate){s.onTime++;row.onTime++;lateDays=0;}else{s.late++;row.late++;lateDays=dayNum(done)-dayNum(v.dueDate);late.push(lateDays);}}
 else{s.openOverdue++;row.openOverdue++;lateDays=todayN-dayNum(v.dueDate);s.oldestOverdueDays=Math.max(s.oldestOverdueDays??0,lateDays);}

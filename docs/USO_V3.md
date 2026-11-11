@@ -168,11 +168,11 @@ Cuarta vista del Planner (**Lista | Calendario | Carga | Indicadores**, visible 
 - **Cumplimiento:** completadas ÷ medibles.
 - **Puntualidad:** completadas con fecha de realización igual o anterior a la programada ÷ completadas con fecha de realización conocida.
 - **Atraso promedio:** promedio de días entre la fecha programada y la de realización en las completadas tardías; «—» si no hay.
-- **Vencidas abiertas:** visitas abiertas con fecha anterior a hoy, con los días de atraso de la más antigua.
+- **Vencidas abiertas:** visitas abiertas programadas dentro del período con fecha anterior a hoy, con los días de atraso de la más antigua; el total de vencidas está en la vista Carga → Vencidas.
 
-Los porcentajes se redondean a enteros y, si no hay con qué calcularlos, se muestra «—». Además hay una tabla por técnico (menor cumplimiento primero) y la evolución mensual (por mes de la fecha programada, con el número de completadas de medibles siempre visible).
+Los porcentajes se redondean a enteros (100 % solo cuando es exacto, y 0 % solo cuando no hay ninguna) y, si no hay con qué calcularlos, se muestra «—». Una fecha de realización posterior a hoy se trata como desconocida. Además hay una tabla por técnico (menor cumplimiento primero) y la evolución mensual (por mes de la fecha programada, con el número de completadas de medibles siempre visible).
 
-**Exportar CSV** descarga `planner-indicadores-AAAA-MM-DD.csv` con el detalle de las visitas medidas (fecha programada, fecha realizada, estado, días de atraso, plan, equipo y técnico): separador «;», UTF-8 con BOM para Excel, y las celdas que empiezan por `=`, `+`, `-` o `@` se prefijan con un apóstrofo.
+**Exportar CSV** descarga `planner-indicadores-AAAA-MM-DD.csv` con el detalle de las visitas medidas (fecha programada, fecha realizada, estado, días de atraso, plan, equipo y técnico): separador «;», UTF-8 con BOM para Excel, y las celdas que empiezan por `=`, `+`, `-`, `@`, tabulación o retorno de carro se prefijan con un apóstrofo.
 
 ### Limitaciones de la fase 1
 

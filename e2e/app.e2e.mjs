@@ -761,6 +761,7 @@ test('Indicadores muestra tarjetas, tabla por técnico y meses con valores exact
   assert.equal(await kpiValue(page, 'Atraso promedio').textContent(), '3,5 días');
   assert.equal(await kpiValue(page, 'Vencidas abiertas').textContent(), '1');
   assert.match(await page.locator('.kpi-card', {hasText: 'Vencidas abiertas'}).locator('.kpi-note').textContent(), /10 días de atraso/);
+  assert.match(await page.locator('.kpi-card', {hasText: 'Vencidas abiertas'}).locator('.kpi-note').textContent(), /en el período/);
   assert.deepEqual(await kpiRows(page), [['Ana Pérez', '3', '2', '1', '1', '1', '67 %'], ['Beto Soto', '3', '3', '1', '1', '0', '100 %']]);
   assert.deepEqual(await monthSum(), [5, 6]);
   await page.getByRole('button', {name: '180 días'}).click();
@@ -825,6 +826,24 @@ test('Indicadores no desborda a 375 px y la tabla se desplaza dentro de su conte
   assert.equal(wrap.over, 'auto'); assert.ok(wrap.scroll > wrap.client, JSON.stringify(wrap));
   const box = await page.locator('[data-action="planner-kpi-days"]').first().boundingBox();
   assert.ok(box.height >= 40, JSON.stringify(box));
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('Indicadores concuerda el singular en la nota de cumplimiento', async () => {
+  const {context, page} = await newPage();
+  await kpiFixture(page, {visits: false});
+  await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {addDays} = await import('/js/planner.js'), {localDate} = await import('/js/domain.js');
+    const companyId = (await db.all('companies'))[0].id, plan = (await db.all('workOrders')).find(r => r.type === 'Plan de mantenimiento');
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name: 'Visita única', type: 'Orden de trabajo', planId: plan.id, equipmentId: plan.equipmentId, dueDate: addDays(localDate(), -3), status: 'Completada'}));
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  await openKpi(page);
+  await page.locator('.kpi-cards').waitFor();
+  assert.equal(norm(await kpiValue(page, 'Cumplimiento').textContent()), '100 %');
+  assert.equal(norm(await page.locator('.kpi-card', {hasText: 'Cumplimiento'}).locator('.kpi-note').textContent()), '1 de 1 visita medida realizada');
+  assert.match(await page.locator('.kpi-card', {hasText: 'Vencidas abiertas'}).locator('.kpi-note').textContent(), /Ninguna vencida programada en el período/);
   assert.deepEqual(page.errors, []);
   await context.close();
 });
