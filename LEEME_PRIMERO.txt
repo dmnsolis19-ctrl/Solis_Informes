@@ -1,13 +1,13 @@
-SOLIS FIELD PRO 3.9.0
+SOLIS FIELD PRO 3.10.0
 
-Base: repositorio 3.8.0.
-Agrega al Planner la vista «Carga» (técnicos por semanas) y «Reasignar» para
-visitas planificadas; los técnicos ven los planes en solo lectura y cerrar
-sesión guarda el rol del dispositivo. Sin migraciones nuevas.
+Base: repositorio 3.9.0.
+Agrega al Planner la vista «Indicadores» (cumplimiento, puntualidad, atraso
+promedio, vencidas abiertas, tabla por técnico, evolución mensual y
+exportación CSV). Sin migraciones nuevas.
 
 1. Descarga un respaldo de la aplicación actual.
-2. Sigue ACTUALIZAR_v3.9.0.md.
+2. Sigue ACTUALIZAR_v3.10.0.md.
 3. Copia el contenido a la raíz de tu repositorio (conserva tu wrangler.jsonc).
 4. Build: node scripts/ci.mjs
    Deploy: node scripts/deploy.mjs
-5. Comprueba Field Pro v3.9.0 y actualiza todos los dispositivos.
+5. Comprueba Field Pro v3.10.0 y actualiza todos los dispositivos.

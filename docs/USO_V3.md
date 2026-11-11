@@ -159,10 +159,25 @@ El selector **Lista | Calendario | Carga** muestra en «Carga» una tabla con un
 
 Administradores, supervisores y el modo local ven «Reasignar» en las visitas Planificadas (lista, calendario y carga). El diálogo ofrece las personas de la empresa (correo y rol), «Sin técnico» y, sin sesión, un campo «Responsable». La visita queda con edición manual: «Correr calendario» y los cambios del plan ya no la tocan. Si la visita cambió en otro dispositivo o ya no está Planificada, se avisa sin guardar. Los técnicos no ven el botón: el servidor no les permite asignar visitas a otros.
 
+### Indicadores
+
+Cuarta vista del Planner (**Lista | Calendario | Carga | Indicadores**, visible para todos los roles que ven el Planner, solo lectura). Elige el período «Últimos 30 días», «90 días» (por defecto) o «180 días»: la ventana va desde hoy menos (N − 1) días hasta hoy, por **fecha programada**. Respeta los filtros de técnico, cliente y equipo.
+
+- **Medible:** visita de un plan con fecha programada dentro de la ventana que está Completada, o abierta (Planificada o En curso) y ya vencida (fecha anterior a hoy). No cuentan las Canceladas ni las futuras (la de hoy, si sigue abierta, tampoco).
+- **Fecha de realización:** la fecha de servicio del informe vinculado a la visita. Sin informe vinculado (o borrado) o con fecha inválida, la visita cuenta como completada pero no entra en puntualidad ni en atraso.
+- **Cumplimiento:** completadas ÷ medibles.
+- **Puntualidad:** completadas con fecha de realización igual o anterior a la programada ÷ completadas con fecha de realización conocida.
+- **Atraso promedio:** promedio de días entre la fecha programada y la de realización en las completadas tardías; «—» si no hay.
+- **Vencidas abiertas:** visitas abiertas con fecha anterior a hoy, con los días de atraso de la más antigua.
+
+Los porcentajes se redondean a enteros y, si no hay con qué calcularlos, se muestra «—». Además hay una tabla por técnico (menor cumplimiento primero) y la evolución mensual (por mes de la fecha programada, con el número de completadas de medibles siempre visible).
+
+**Exportar CSV** descarga `planner-indicadores-AAAA-MM-DD.csv` con el detalle de las visitas medidas (fecha programada, fecha realizada, estado, días de atraso, plan, equipo y técnico): separador «;», UTF-8 con BOM para Excel, y las celdas que empiezan por `=`, `+`, `-` o `@` se prefijan con un apóstrofo.
+
 ### Limitaciones de la fase 1
 
 - No hay vista semanal ni arrastrar para reprogramar visitas en el calendario; la carga por técnico no tiene capacidades configurables ni reasignación en bloque.
 - No hay mantenimiento por horas de operación.
-- No hay indicadores (cumplimiento, MTBF, MTTR), repuestos ni costos.
+- No hay indicadores de MTBF ni MTTR, repuestos ni costos (los de cumplimiento están en «Indicadores»).
 - El portal del cliente no cambia.
 - El cierre automático requiere abrir el Planner en un dispositivo de administrador o supervisor; no hay cierre en segundo plano.
