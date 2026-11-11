@@ -1,3 +1,12 @@
+# 3.10.0 · Indicadores de cumplimiento del Planner · 11 de noviembre de 2026
+
+- Cuarta vista del Planner, «Indicadores» (selector «Lista | Calendario | Carga | Indicadores», se recuerda en cada dispositivo): tarjetas de Cumplimiento, Puntualidad, Atraso promedio y Vencidas abiertas (con la más antigua), «Visitas medidas: N», tabla de cumplimiento por técnico (los peores primero) y evolución mensual con barras y el número siempre visible. Período «Últimos 30 días | 90 días | 180 días» (por defecto 90, no se guarda) y los mismos filtros que las otras vistas.
+- Definiciones: medibles = visitas con fecha programada en el período, Completadas o abiertas (Planificada/En curso) ya vencidas, sin Canceladas ni futuras. Cumplimiento = completadas ÷ medibles. Puntualidad = completadas a tiempo ÷ completadas con fecha de realización conocida (fecha de servicio del informe vinculado). Atraso promedio = promedio de días de las completadas tardías. Sin datos se muestra «—», nunca «0 %».
+- «Exportar CSV» con el detalle de las visitas medidas (separador «;», UTF-8 con BOM, celdas protegidas contra fórmulas); archivo `planner-indicadores-AAAA-MM-DD.csv`.
+- Estado vacío claro, tabla con desplazamiento propio en móvil (sin desbordar la página) y tema oscuro.
+- Sin migración D1, sin cambios en IndexedDB ni en la sincronización: todo se calcula en el cliente con las visitas y los informes existentes.
+- 259 pruebas automáticas superadas y 24 pruebas de navegador superadas.
+
 # 3.9.0 · Carga por técnico y reasignar · 9 de noviembre de 2026
 
 - Vista «Carga» en el Planner (selector «Lista | Calendario | Carga», se recuerda en cada dispositivo): tabla de responsables por semanas con las visitas abiertas (Planificada o En curso). Columnas «Vencidas» y las 6 semanas que parten el lunes de la semana actual («Sem. 9 nov»); la intensidad de cada celda es relativa al máximo de la tabla y siempre muestra el número. Responsable por cuenta (correo) o nombre; sin ninguno, «Sin técnico». Respeta los filtros de técnico, cliente y equipo.

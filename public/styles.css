@@ -105,3 +105,21 @@
 .load-cell:focus-visible{outline-offset:-2px}
 .plan-history{margin:0;padding-left:18px;font-size:13px}
 @media(max-width:600px){.load-table .load-name{min-width:104px;max-width:128px;padding:4px 8px}.load-cell{min-width:44px;min-height:44px}}
+/* Indicadores de cumplimiento del Planner */
+.kpi-period{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:0 0 14px}.kpi-range{margin:0;font-size:12px;color:var(--muted)}.kpi-measured{margin:0 0 12px;font-size:13px}
+.kpi-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 26px}
+.kpi-card{min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--cal-cell)}
+.kpi-card.kpi-warn{background:var(--cal-overdue-bg);border-color:var(--cal-overdue-fg)}.kpi-card.kpi-warn .kpi-label,.kpi-card.kpi-warn .kpi-value,.kpi-card.kpi-warn .kpi-note{color:var(--cal-overdue-fg)}
+.kpi-label{margin:0;font-size:12px;font-weight:650;color:var(--muted)}.kpi-value{margin:4px 0;font-size:28px;line-height:1.15;font-weight:750;letter-spacing:-.5px;color:var(--text)}.kpi-note{margin:0;font-size:12px;color:var(--muted)}
+.kpi-wrap{overflow-x:auto;margin:0 0 24px;border:1px solid var(--line);border-radius:8px;background:var(--cal-cell)}.kpi-wrap:focus-visible{outline-offset:2px}
+.kpi-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.kpi-table th,.kpi-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center;font-weight:500;color:var(--text);white-space:nowrap}
+.kpi-table thead th{background:var(--cal-cell-outside);font-size:11px;font-weight:650;color:var(--muted)}
+.kpi-table tbody tr:last-child>*{border-bottom:0}
+.kpi-table .kpi-name{position:sticky;left:0;z-index:1;min-width:132px;max-width:200px;text-align:left;padding:10px 12px;overflow:hidden;text-overflow:ellipsis;font-weight:650;background:var(--cal-cell);box-shadow:1px 0 0 var(--line)}.kpi-table thead .kpi-name{background:var(--cal-cell-outside)}
+.kpi-months{list-style:none;margin:0 0 24px;padding:0;display:grid;gap:8px}
+.kpi-month{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:center;font-size:13px}.kpi-month-name{font-weight:650}.kpi-month-text{font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi-bar{display:block;height:12px;border-radius:6px;background:var(--cal-cell-outside);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}.kpi-bar i{display:block;height:100%;background:var(--teal)}
+.kpi-actions{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:0 0 8px}
+@media(max-width:900px){.kpi-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.kpi-period .seg button{padding:8px 6px}.planner-toolbar .seg button{padding:8px 4px;min-width:0;font-size:12px}.kpi-value{font-size:24px}.kpi-table .kpi-name{min-width:104px;max-width:128px;padding:10px 8px}.kpi-month{grid-template-columns:72px minmax(0,1fr);gap:4px 10px}.kpi-month-name{white-space:nowrap}.kpi-month-text{grid-column:2;font-size:12px}.kpi-actions .btn{width:100%}}
