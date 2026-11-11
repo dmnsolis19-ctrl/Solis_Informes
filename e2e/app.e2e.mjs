@@ -695,3 +695,136 @@ test('la vista Carga no desborda la página a 375 px y la tabla se desplaza dent
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+// Indicadores de cumplimiento. Fechas relativas a hoy (del navegador, que puede tener el reloj fijado).
+async function kpiFixture(page, {menu = false, visits = true} = {}) {
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  if (menu) await page.click('[data-action=menu]');
+  await createCompany(page);
+  const today = await page.evaluate(async seed => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {addDays} = await import('/js/planner.js'), {localDate, newReport} = await import('/js/domain.js');
+    const company = (await db.all('companies'))[0], companyId = company.id, today = localDate(), ago = n => addDays(today, -n);
+    const customer = Object.assign(newCatalog('customers', companyId), {name: 'Cliente KPI'}); await db.saveEntity('customers', customer);
+    const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Equipo KPI', tag: 'EQ-KPI', customerId: customer.id}); await db.saveEntity('equipment', asset);
+    const plan = Object.assign(newCatalog('workOrders', companyId), {name: 'Plan KPI', type: 'Plan de mantenimiento', customerId: customer.id, equipmentId: asset.id, anchorDate: addDays(today, 400), dueDate: addDays(today, 400), intervalDays: '30', status: 'Planificada', planState: 'Activo'});
+    await db.saveEntity('workOrders', plan);
+    if (!seed) return today;
+    const visit = async (name, due, extra = {}, doneOn) => {
+      const rep = doneOn ? Object.assign(newReport('general', company, 'KPI-' + name), {serviceDate: doneOn, status: 'Emitido'}) : null;
+      if (rep) await db.saveEntity('reports', rep);
+      await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name, type: 'Orden de trabajo', planId: plan.id, customerId: customer.id, equipmentId: asset.id, dueDate: due, status: 'Planificada', priority: 'Media', reportId: rep?.id || ''}, extra));
+    };
+    const ana = {ownerId: 'u-ana', owner: 'Ana Pérez'}, beto = {owner: 'Beto Soto'}, c = {status: 'Completada'};
+    await visit('Visita K1', ago(20), {...ana, ...c}, ago(20)); await visit('Visita K2', ago(15), {...ana, ...c}, ago(12)); await visit('Visita K3', ago(10), ana);
+    await visit('Visita K4', ago(8), {...beto, ...c}, ago(9)); await visit('=Revisar K5', ago(6), {...beto, ...c}, ago(2)); await visit('Visita K6', ago(4), {...beto, ...c});
+    await visit('Visita K7', ago(40), c, ago(40)); await visit('Visita K8', ago(35), {status: 'En curso'});
+    await visit('Visita cancelada', ago(5), {...ana, status: 'Cancelada'}); await visit('Visita futura', addDays(today, 5), ana); await visit('Visita de hoy', today, ana);
+    return today;
+  }, visits);
+  await page.reload({waitUntil: 'networkidle'});
+  return today;
+}
+const openKpi = async page => {
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.getByRole('button', {name: 'Indicadores', exact: true}).click();
+};
+const kpiValue = (page, label) => page.locator('.kpi-card', {has: page.locator(`.kpi-label:text-is("${label}")`)}).locator('.kpi-value');
+const norm = s => s.replace(/\s/g, ' ');
+const kpiRows = page => page.locator('.kpi-table tbody tr').evaluateAll(trs => trs.map(tr => [...tr.children].map(c => c.textContent.replace(/\s/g, ' '))));
+
+test('Indicadores muestra tarjetas, tabla por técnico y meses con valores exactos y cambia con el período', async () => {
+  const {context, page} = await newPage();
+  await kpiFixture(page);
+  await openKpi(page);
+  await page.locator('.kpi-cards').waitFor();
+  assert.equal(await page.locator('[data-action="planner-view"][aria-pressed=true]').textContent(), 'Indicadores');
+  assert.equal(await page.locator('[data-action="planner-kpi-days"][aria-pressed=true]').getAttribute('data-days'), '90');
+  // 90 días: 8 medibles (K1-K8), 6 completadas, 3 a tiempo, 2 tardías (3 y 4 días), 1 sin fecha, 2 vencidas abiertas (la más antigua 35 días).
+  assert.equal(norm(await kpiValue(page, 'Cumplimiento').textContent()), '75 %');
+  assert.equal(norm(await kpiValue(page, 'Puntualidad').textContent()), '60 %');
+  assert.equal(await kpiValue(page, 'Atraso promedio').textContent(), '3,5 días');
+  assert.equal(await kpiValue(page, 'Vencidas abiertas').textContent(), '2');
+  assert.match(await page.locator('.kpi-card', {hasText: 'Vencidas abiertas'}).locator('.kpi-note').textContent(), /35 días de atraso/);
+  assert.match(await page.locator('.kpi-measured').textContent(), /Visitas medidas: 8/);
+  assert.match(await page.locator('.kpi-card', {hasText: 'Puntualidad'}).locator('.kpi-note').textContent(), /3 de 5 visitas realizadas a tiempo \(1 sin fecha de realización\)/);
+  assert.deepEqual(await page.locator('.kpi-table thead th').allTextContents(), ['Técnico', 'Medibles', 'Completadas', 'A tiempo', 'Tardías', 'Abiertas vencidas', 'Cumplimiento']);
+  assert.deepEqual(await kpiRows(page), [['Sin técnico', '2', '1', '1', '0', '1', '50 %'], ['Ana Pérez', '3', '2', '1', '1', '1', '67 %'], ['Beto Soto', '3', '3', '1', '1', '0', '100 %']]);
+  const monthSum = async () => (await page.locator('.kpi-month-text').allTextContents()).reduce(([c, m], t) => { const x = t.match(/(\d+) de (\d+)/); return x ? [c + +x[1], m + +x[2]] : [c, m]; }, [0, 0]);
+  assert.deepEqual(await monthSum(), [6, 8]);
+  assert.ok(await page.locator('.kpi-month').count() <= 7);
+  assert.ok(await page.locator('.kpi-bar[role=img]').first().getAttribute('aria-label'));
+  // 30 días: K7 y K8 salen de la ventana.
+  await page.getByRole('button', {name: 'Últimos 30 días'}).click();
+  assert.equal(await page.locator('[data-action="planner-kpi-days"][aria-pressed=true]').getAttribute('data-days'), '30');
+  assert.equal(norm(await kpiValue(page, 'Cumplimiento').textContent()), '83 %');
+  assert.equal(norm(await kpiValue(page, 'Puntualidad').textContent()), '50 %');
+  assert.equal(await kpiValue(page, 'Atraso promedio').textContent(), '3,5 días');
+  assert.equal(await kpiValue(page, 'Vencidas abiertas').textContent(), '1');
+  assert.match(await page.locator('.kpi-card', {hasText: 'Vencidas abiertas'}).locator('.kpi-note').textContent(), /10 días de atraso/);
+  assert.deepEqual(await kpiRows(page), [['Ana Pérez', '3', '2', '1', '1', '1', '67 %'], ['Beto Soto', '3', '3', '1', '1', '0', '100 %']]);
+  assert.deepEqual(await monthSum(), [5, 6]);
+  await page.getByRole('button', {name: '180 días'}).click();
+  assert.equal(norm(await kpiValue(page, 'Cumplimiento').textContent()), '75 %');
+  // Un filtro de técnico (con cuenta) se aplica a todo; la vista se recuerda al recargar, el período no.
+  await page.selectOption('[data-ops-filter="ownerId"]', {label: 'Ana Pérez'});
+  assert.equal(norm(await kpiValue(page, 'Cumplimiento').textContent()), '67 %');
+  assert.equal(await kpiValue(page, 'Vencidas abiertas').textContent(), '1');
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.kpi-cards').waitFor();
+  assert.equal(await page.locator('[data-action="planner-kpi-days"][aria-pressed=true]').getAttribute('data-days'), '90');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('Indicadores exporta el detalle de las visitas medidas como CSV', async () => {
+  const {context, page} = await newPage();
+  const today = await kpiFixture(page);
+  await openKpi(page);
+  await page.locator('.kpi-cards').waitFor();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', {name: 'Exportar CSV'}).click()]);
+  assert.equal(download.suggestedFilename(), `planner-indicadores-${today}.csv`);
+  const chunks = []; for await (const c of await download.createReadStream()) chunks.push(c);
+  const buf = Buffer.concat(chunks), text = buf.toString('utf8'), lines = text.split('\r\n');
+  assert.deepEqual([...buf.subarray(0, 3)], [0xEF, 0xBB, 0xBF]);
+  assert.equal(lines[0], '﻿Fecha programada;Fecha realizada;Estado;Días de atraso;Plan;Equipo;Técnico');
+  assert.equal(lines.length, 10, 'encabezado + 8 visitas + línea final vacía');
+  const rel = n => page.evaluate(async n => (await import('/js/planner.js')).addDays((await import('/js/domain.js')).localDate(), -n), n);
+  assert.equal(lines[1], `${await rel(40)};${await rel(40)};Completada;0;Visita K7;EQ-KPI · Equipo KPI;Sin técnico`);
+  assert.equal(lines[5], `${await rel(10)};;Vencida;10;Visita K3;EQ-KPI · Equipo KPI;Ana Pérez`);
+  assert.ok(lines.some(l => l.includes(";'=Revisar K5;")), 'el nombre que empieza por = se prefija con apóstrofo');
+  const d2 = await rel(2);
+  assert.ok(lines.some(l => l.includes(`;${d2};Completada;4;`)));
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('Indicadores sin visitas medibles muestra el estado vacío y no ofrece exportar', async () => {
+  const {context, page} = await newPage();
+  await kpiFixture(page, {visits: false});
+  await openKpi(page);
+  await page.getByText('Aún no hay visitas vencidas o completadas en este período.').waitFor();
+  assert.equal(await page.locator('.kpi-cards, .kpi-table').count(), 0);
+  assert.equal(await page.getByRole('button', {name: 'Exportar CSV'}).count(), 0);
+  assert.equal(await page.locator('[data-action="planner-kpi-days"]').count(), 3);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('Indicadores no desborda a 375 px y la tabla se desplaza dentro de su contenedor', async () => {
+  const {context, page} = await newPage({hasTouch: true});
+  await page.setViewportSize({width: 375, height: 800});
+  await kpiFixture(page, {menu: true});
+  await page.evaluate(() => localStorage.setItem('solis.plannerView', 'kpi'));
+  await page.reload({waitUntil: 'networkidle'});
+  await page.click('[data-action=menu]');
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.kpi-cards').waitFor();
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  const wrap = await page.locator('.kpi-wrap').evaluate(el => ({scroll: el.scrollWidth, client: el.clientWidth, over: getComputedStyle(el).overflowX}));
+  assert.equal(wrap.over, 'auto'); assert.ok(wrap.scroll > wrap.client, JSON.stringify(wrap));
+  const box = await page.locator('[data-action="planner-kpi-days"]').first().boundingBox();
+  assert.ok(box.height >= 40, JSON.stringify(box));
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});

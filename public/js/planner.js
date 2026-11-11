@@ -58,11 +58,13 @@ const MON=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','di
 export const mondayOf=iso=>{const n=dayNum(iso);return isoOf((n-(new Date(n*864e5).getUTCDay()+6)%7)*864e5);};
 const ownerKey=v=>v.ownerId||String(v.owner||'').trim().toLowerCase();
 const ownerName=(v,people)=>{const p=v.ownerId&&people.find(x=>x.id===v.ownerId);return p?.email||String(v.owner||'').trim()||(v.ownerId?'Técnico asignado':NO_OWNER);};
+// Una fila de texto libre que coincide con el nombre de una persona con cuenta se rotula «(sin cuenta)» para distinguirlas; quita la marca interna.
+function markNoAccount(rows){const named=new Set([...rows.values()].filter(r=>r.account).map(r=>r.name.toLowerCase()));for(const r of rows.values()){if(!r.account&&r.key!==''&&named.has(r.name.toLowerCase()))r.name+=' (sin cuenta)';delete r.account;}}
 // Visitas abiertas con fecha válida (sin planes) que pasan los filtros, con su columna: 'overdue' o el índice de semana (omite las que quedan fuera del rango).
 function loadEntries(visits,today,filters,weeks){const f=['ownerId','customerId','equipmentId'].filter(k=>filters[k]),start=dayNum(mondayOf(today)),out=[];for(const v of visits){if(v.type==='Plan de mantenimiento'||!['Planificada','En curso'].includes(v.status)||!validIso(v.dueDate)||f.some(k=>v[k]!==filters[k]))continue;const col=v.dueDate<today?'overdue':Math.floor((dayNum(v.dueDate)-start)/7);if(col!=='overdue'&&(col<0||col>=weeks))continue;out.push({v,col,key:ownerKey(v)});}return out;}
 export function workloadTable(visits,today,people=[],filters={},weeks=6){const start=dayNum(mondayOf(today)),cols=Array.from({length:weeks},(_,i)=>{const monday=isoOf((start+i*7)*864e5);return {monday,label:`Sem. ${+monday.slice(8)} ${MON[+monday.slice(5,7)-1]}`};}),rows=new Map();
 for(const {v,col,key} of loadEntries(visits,today,filters,weeks)){let r=rows.get(key);if(!r){r={key,name:ownerName(v,people),account:!!v.ownerId,overdue:0,cells:Array(weeks).fill(0),total:0};rows.set(key,r);}if(col==='overdue')r.overdue++;else r.cells[col]++;r.total++;}
-const named=new Set([...rows.values()].filter(r=>r.account).map(r=>r.name.toLowerCase()));for(const r of rows.values()){if(!r.account&&r.key!==''&&named.has(r.name.toLowerCase()))r.name+=' (sin cuenta)';delete r.account;}
+markNoAccount(rows);
 const list=[...rows.values()].sort((a,b)=>(a.key===''?1:0)-(b.key===''?1:0)||a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'}));
 return {weeks:cols,rows:list,max:list.reduce((m,r)=>Math.max(m,r.overdue,...r.cells),0)};}
 export function workloadCell(visits,today,people,key,col,filters={},weeks=6){return loadEntries(visits,today,filters,weeks).filter(x=>x.key===key&&x.col===col).map(x=>x.v).sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:(PRIO[a.priority]??4)-(PRIO[b.priority]??4)||String(a.name||'').localeCompare(String(b.name||''),'es',{numeric:true,sensitivity:'base'}));}
@@ -75,3 +77,27 @@ export const textPerson=(visit,text)=>{const owner=String(text||'').trim();retur
 export function planReadonlyData(plan,visits,equipment,today,people=[]){const asset=equipment.find(x=>x.id===plan.equipmentId),state=plan.planState||'Activo',t=templates[plan.reportTemplate]||templates.general;let history=[];try{const h=JSON.parse(plan.anchorHistory||'[]');if(Array.isArray(h))history=h.filter(x=>x&&x.from&&x.to).map(x=>({from:x.from,to:x.to}));}catch{}
 const next=state==='Activo'?visits.filter(v=>v.planId===plan.id&&['Planificada','En curso'].includes(v.status)&&validIso(v.dueDate)&&v.dueDate>=today).map(v=>v.dueDate).sort()[0]||'':'';
 return {name:plan.name||'',equipment:asset?(asset.tag?asset.tag+' · ':'')+asset.name:'Equipo no disponible',anchorDate:planAnchor(plan)||'',intervalDays:String(plan.intervalDays||''),owner:people.find(p=>p.id===plan.ownerId)?.email||plan.owner||(plan.ownerId?'Técnico asignado':NO_OWNER),template:t.shortLabel||t.label,scope:plan.scope||'',state,next,history};}
+
+// Indicadores de cumplimiento (puros). Ventana [hoy-(días-1), hoy] por fecha programada, con aritmética entera UTC sobre cadenas 'AAAA-MM-DD'.
+const GROUPS=['ownerId','customerId','equipmentId'],byName=(a,b)=>a.localeCompare(b,'es',{numeric:true,sensitivity:'base'}),pct=(a,b)=>b?Math.round(100*a/b):null;
+// Fecha de realización: serviceDate del informe vinculado vivo, o '' si no hay o no es una fecha válida.
+export function completionDate(visit,reports){const r=visit.reportId&&reports.find(x=>x.id===visit.reportId&&!x._sync?.deleted);return r&&validIso(r.serviceDate)?r.serviceDate:'';}
+export const complianceFileName=today=>`planner-indicadores-${today}.csv`;
+export function complianceStats(visits,reports,today,days,people=[],filters={},equipment=[]){const ok=validIso(today),span=Number.isInteger(days)&&days>=1?days:90,todayN=ok?dayNum(today):0,from=ok?isoOf((todayN-span+1)*864e5):'',f=GROUPS.filter(k=>filters[k]),eq=new Map(equipment.map(x=>[x.id,(x.tag?x.tag+' · ':'')+x.name])),live=new Map(reports.filter(r=>!r._sync?.deleted).map(r=>[r.id,r]));
+const s={from,to:ok?today:'',days:span,measured:0,completed:0,onTime:0,late:0,unknownDate:0,openOverdue:0,oldestOverdueDays:null,compliancePct:null,punctualityPct:null,avgLateDays:null,rows:[],months:[],details:[]},rows=new Map(),months=new Map(),late=[];
+if(ok){let y=+from.slice(0,4),m=+from.slice(5,7);const last=today.slice(0,7);for(;;){const ym=`${y}-${String(m).padStart(2,'0')}`;months.set(ym,{ym,label:`${MON[m-1]} ${y}`,measured:0,completed:0,pct:null});if(ym>=last)break;({year:y,month:m}=shiftMonth(y,m,1));}}
+for(const v of ok?visits:[]){if(v.type==='Plan de mantenimiento'||!validIso(v.dueDate)||v.dueDate<from||v.dueDate>today||f.some(k=>v[k]!==filters[k]))continue;const finished=v.status==='Completada',open=['Planificada','En curso'].includes(v.status)&&v.dueDate<today;if(!finished&&!open)continue;
+const r2=finished&&v.reportId&&live.get(v.reportId),done=finished&&r2&&validIso(r2.serviceDate)?r2.serviceDate:'',key=ownerKey(v);let row=rows.get(key);if(!row){row={key,name:ownerName(v,people),account:!!v.ownerId,measured:0,completed:0,onTime:0,late:0,openOverdue:0,compliancePct:null};rows.set(key,row);}
+const mo=months.get(v.dueDate.slice(0,7));let lateDays='';s.measured++;row.measured++;mo.measured++;
+if(finished){s.completed++;row.completed++;mo.completed++;if(!done)s.unknownDate++;else if(done<=v.dueDate){s.onTime++;row.onTime++;lateDays=0;}else{s.late++;row.late++;lateDays=dayNum(done)-dayNum(v.dueDate);late.push(lateDays);}}
+else{s.openOverdue++;row.openOverdue++;lateDays=todayN-dayNum(v.dueDate);s.oldestOverdueDays=Math.max(s.oldestOverdueDays??0,lateDays);}
+s.details.push({dueDate:v.dueDate,doneDate:done,status:finished?'Completada':'Vencida',lateDays,plan:String(v.name||''),equipment:eq.get(v.equipmentId)||'',owner:ownerName(v,people)});}
+markNoAccount(rows);
+for(const r of rows.values())r.compliancePct=pct(r.completed,r.measured);
+s.compliancePct=pct(s.completed,s.measured);s.punctualityPct=pct(s.onTime,s.onTime+s.late);s.avgLateDays=late.length?late.reduce((a,b)=>a+b,0)/late.length:null;
+s.rows=[...rows.values()].sort((a,b)=>a.compliancePct-b.compliancePct||byName(a.name,b.name));
+s.months=[...months.values()].map(m=>({...m,pct:pct(m.completed,m.measured)}));
+s.details.sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:byName(a.plan,b.plan));return s;}
+const CSV_HEAD=['Fecha programada','Fecha realizada','Estado','Días de atraso','Plan','Equipo','Técnico'];
+const csvCell=x=>{let t=String(x??'');if(/^[=+\-@\t\r]/.test(t))t="'"+t;return /[;"\r\n]/.test(t)?'"'+t.replaceAll('"','""')+'"':t;};
+export function complianceCsv(stats){return '\uFEFF'+[CSV_HEAD,...stats.details.map(d=>[d.dueDate,d.doneDate,d.status,d.lateDays,d.plan,d.equipment,d.owner])].map(r=>r.map(csvCell).join(';')).join('\r\n')+'\r\n';}
