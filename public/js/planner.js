@@ -1,5 +1,5 @@
 import {newOperation,normalizeOperation} from './operations.js';
-import {localDate,templates} from './domain.js';
+import {localDate,templates,fmtDate} from './domain.js';
 export const PLANNER_HORIZON_DAYS=90;
 const ISO=/^\d{4}-\d{2}-\d{2}$/,dayNum=iso=>Math.round(Date.UTC(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8,10))/864e5);
 export const validIso=s=>ISO.test(s||'')&&localDate(new Date(s+'T12:00:00'))===s;
@@ -70,6 +70,15 @@ return {weeks:cols,rows:list,max:list.reduce((m,r)=>Math.max(m,r.overdue,...r.ce
 export function workloadCell(visits,today,people,key,col,filters={},weeks=6){return loadEntries(visits,today,filters,weeks).filter(x=>x.key===key&&x.col===col).map(x=>x.v).sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:(PRIO[a.priority]??4)-(PRIO[b.priority]??4)||String(a.name||'').localeCompare(String(b.name||''),'es',{numeric:true,sensitivity:'base'}));}
 // Reasigna una visita Planificada: copia con el nuevo responsable y edición manual (protegida del calendario y del plan), o null si no cambia nada.
 export function reassignVisit(visit,person){if(visit.status!=='Planificada')return null;const ownerId=person?.ownerId||'',owner=String(person?.owner||'').trim();if((visit.ownerId||'')===ownerId&&(ownerId||String(visit.owner||'').trim()===owner))return null;return {...visit,ownerId,owner,manualEdit:'1'};}
+// Reprogramar y cancelar (puros). Ambas dejan manualEdit='1' (protegen la visita del calendario y del plan) y conservan el id: el generador la sigue contando como existente.
+export const RESCHEDULE_PAST_DAYS=365,RESCHEDULE_FUTURE_DAYS=730,NOTES_MAX=20000,CANCELLED='visita cancelada';
+export function dateRangeForReschedule(today){const n=dayNum(today);return {min:isoOf((n-RESCHEDULE_PAST_DAYS)*864e5),max:isoOf((n+RESCHEDULE_FUTURE_DAYS)*864e5)};}
+// Copia con la nueva fecha, o null si la visita no está Planificada o la fecha no cambia; lanza un Error en español si la fecha es inválida o queda fuera de rango.
+export function rescheduleVisit(visit,date,today){if(visit.status!=='Planificada')return null;if(!validIso(date))throw new Error('Elige una fecha válida.');if(date===visit.dueDate)return null;const {min,max}=dateRangeForReschedule(today);if(date<min||date>max)throw new Error(`Elige una fecha entre ${fmtDate(min)} y ${fmtDate(max)}.`);return {...visit,dueDate:date,manualEdit:'1'};}
+// Copia cancelada con una línea añadida a las notas (el motivo se recorta para caber en el límite de notes; las notas anteriores no se tocan), o null si la visita no está Planificada.
+export function cancelVisit(visit,reason,today){if(visit.status!=='Planificada')return null;if(!validIso(today))throw new Error('La fecha de hoy no es válida.');const head=`Visita cancelada el ${today}`,prefix=visit.notes?visit.notes+'\n':'',why=String(reason||'').replace(/\s+/g,' ').trim(),room=NOTES_MAX-prefix.length-head.length-2,line=why&&room>0?`${head}: ${why.slice(0,room)}`:`${head}.`;return {...visit,status:'Cancelada',closedReason:CANCELLED,manualEdit:'1',notes:prefix.length+line.length<=NOTES_MAX?prefix+line:visit.notes||''};}
+// Visitas abiertas del mismo responsable en una fecha (sin contar la propia visita ni las borradas); 0 si la visita no tiene responsable.
+export function sameOwnerLoad(visits,visit,date){const key=ownerKey(visit);if(!key)return 0;return visits.filter(v=>v.id!==visit.id&&v.type!=='Plan de mantenimiento'&&!v._sync?.deleted&&['Planificada','En curso'].includes(v.status)&&v.dueDate===date&&ownerKey(v)===key).length;}
 // Responsable escrito a mano (modo local): si el texto no cambió se conserva la cuenta; si cambió, no hay cuenta asociada.
 export const OWNER_MAX=200;
 export const textPerson=(visit,text)=>{const owner=String(text||'').trim();return {ownerId:owner===String(visit.owner||'').trim()?visit.ownerId||'':'',owner};};

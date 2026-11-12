@@ -847,3 +847,351 @@ test('Indicadores concuerda el singular en la nota de cumplimiento', async () =>
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+// Reprogramar y cancelar visitas. Fechas relativas a hoy (del navegador, que puede tener el reloj fijado).
+const shift = (iso, n) => new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) + n * 864e5).toISOString().slice(0, 10);
+const fmt = (page, iso) => page.evaluate(async d => (await import('/js/domain.js')).fmtDate(d), iso);
+const openList = async page => { await page.locator('nav').getByText('Planner', {exact: true}).click(); await page.locator('[data-planner-visit]').first().waitFor(); };
+const cardOf = (page, name) => page.locator('[data-planner-visit]', {hasText: name});
+const sameMonthTarget = today => shift(today, 3).slice(0, 7) === today.slice(0, 7) ? shift(today, 3) : shift(today, -3);
+const rowsNamed = (page, name) => page.evaluate(async n => (await (await import('/js/store.js')).all('workOrders')).filter(r => r.name === n), name);
+
+test('reprogramar desde la lista valida la fecha, guarda con Enter sin recargar y conserva el id y la edición manual', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await openList(page);
+  const before = await woRow(page, 'Visita A1');
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.waitFor();
+  const field = dlg.getByLabel('Nueva fecha');
+  assert.equal(await field.inputValue(), d.today);
+  assert.equal(await field.evaluate(el => document.activeElement === el), true, 'el foco inicial está en la fecha');
+  await dlg.getByText('Visita A1', {exact: false}).first().waitFor();
+  assert.match(await dlg.innerText(), /EQ-CAR · Equipo Carga/);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.modal').count(), 0);
+  assert.equal((await woRow(page, 'Visita A1')).dueDate, d.today);
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).click();
+  // vacía, igual a la actual y fuera de rango: mensaje y sin escritura
+  await field.fill('');
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await dlg.getByText('Elige una fecha válida.').waitFor();
+  assert.equal(await field.getAttribute('aria-invalid'), 'true');
+  await field.fill(d.today);
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await dlg.getByText('Sin cambios: elige una fecha distinta.').waitFor();
+  const msg = `Elige una fecha entre ${await fmt(page, shift(d.today, -365))} y ${await fmt(page, shift(d.today, 730))}.`;
+  await field.fill(shift(d.today, 731));
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await dlg.getByText(msg).waitFor();
+  await field.fill(shift(d.today, -366));
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await dlg.getByText(msg).waitFor();
+  assert.equal((await woRow(page, 'Visita A1')).dueDate, d.today);
+  // los bordes exactos son válidos; el error se limpia al corregir
+  await field.fill(shift(d.today, 730));
+  await page.waitForFunction(() => document.querySelector('[data-error-for=date]').textContent === '');
+  await field.fill(shift(d.today, 3));
+  const url = page.url();
+  await field.press('Enter');
+  await page.locator('.modal').waitFor({state: 'detached'});
+  assert.equal(page.url(), url, 'Enter no recarga la página');
+  const row = await woRow(page, 'Visita A1');
+  assert.equal(row.dueDate, shift(d.today, 3)); assert.equal(row.manualEdit, '1'); assert.equal(row.id, before.id); assert.equal(row.status, 'Planificada');
+  await page.getByText(`Visita reprogramada al ${await fmt(page, shift(d.today, 3))}.`).waitFor();
+  assert.equal(await page.locator('.planner-section', {has: page.locator('h2:text-is("Esta semana")')}).locator('[data-planner-visit]', {hasText: 'Visita A1'}).count(), 1);
+  assert.equal(await page.locator('.planner-section', {has: page.locator('h2:text-is("Hoy")')}).locator('[data-planner-visit]', {hasText: 'Visita A1'}).count(), 0);
+  // persiste al recargar y no reaparece una visita en la fecha original
+  await page.reload({waitUntil: 'networkidle'});
+  await openList(page);
+  const again = await rowsNamed(page, 'Visita A1');
+  assert.equal(again.length, 1); assert.equal(again[0].dueDate, shift(d.today, 3));
+  // la visita reprogramada pasa a la fecha con aviso de la misma tarjeta
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).getByText(await fmt(page, shift(d.today, 3))).first().waitFor();
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('reprogramar desde el calendario mueve la visita al nuevo día y conserva el día seleccionado', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await page.evaluate(() => localStorage.setItem('solis.plannerView', 'calendar'));
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.cal-grid').waitFor();
+  const target = sameMonthTarget(d.today), id = (await woRow(page, 'Visita A1')).id;
+  const day = iso => page.locator(`.cal-day[data-date="${iso}"]`);
+  await day(d.today).locator('.cal-chip', {hasText: 'Visita A1'}).waitFor();
+  assert.equal(await day(d.today).getAttribute('aria-pressed'), 'true');
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.getByLabel('Nueva fecha').fill(target);
+  await dlg.getByLabel('Nueva fecha').press('Enter');
+  await page.locator('.modal').waitFor({state: 'detached'});
+  assert.equal(await day(d.today).locator('.cal-chip', {hasText: 'Visita A1'}).count(), 0);
+  await day(target).locator('.cal-chip', {hasText: 'Visita A1'}).waitFor();
+  assert.equal(await day(d.today).getAttribute('aria-pressed'), 'true', 'el día seleccionado se conserva');
+  assert.equal(await cardOf(page, 'Visita A1').count(), 0);
+  await day(target).click();
+  await cardOf(page, 'Visita A1').waitFor();
+  const row = await woRow(page, 'Visita A1');
+  assert.equal(row.dueDate, target); assert.equal(row.manualEdit, '1'); assert.equal(row.id, id);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('en la vista Carga, reprogramar una visita a otra semana la cambia de celda', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await openLoad(page);
+  await cellAt(page, 'Ana Pérez', 0).click();
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.getByLabel('Nueva fecha').fill(shift(d.today, 8));
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await page.locator('.modal').waitFor({state: 'detached'});
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).textContent(), '0');
+  assert.equal(await cellAt(page, 'Ana Pérez', d.laterCol).textContent(), '2');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('reprogramar avisa al instante cuando el día elegido ya tiene visitas abiertas del mismo responsable', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await page.evaluate(async later => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), all = await db.all('workOrders'), a2 = all.find(r => r.name === 'Visita A2');
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', a2.companyId), {name: 'Visita A4', type: 'Orden de trabajo', planId: a2.planId, equipmentId: a2.equipmentId, dueDate: later, status: 'Planificada', ownerId: 'u-ana', owner: 'Ana Pérez'}));
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', a2.companyId), {name: 'Visita A5', type: 'Orden de trabajo', planId: a2.planId, equipmentId: a2.equipmentId, dueDate: later, status: 'Cancelada', ownerId: 'u-ana', owner: 'Ana Pérez'}));
+  }, d.later);
+  await page.reload({waitUntil: 'networkidle'});
+  await openList(page);
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Reprogramar visita'}), field = dlg.getByLabel('Nueva fecha'), hint = dlg.locator('#planner-reschedule-hint');
+  assert.equal(await hint.textContent(), '', 'en la fecha actual no hay aviso');
+  await field.fill(d.later);
+  assert.equal(await hint.textContent(), 'Ese día el técnico ya tiene 2 visitas.', 'cuenta A2 y A4; no la cancelada ni la propia');
+  await field.fill(shift(d.today, -3));
+  assert.equal(await hint.textContent(), 'Ese día el técnico ya tiene 1 visita.');
+  await field.fill(shift(d.today, 20));
+  assert.equal(await hint.textContent(), '');
+  await field.fill(d.later);
+  assert.equal(await hint.textContent(), 'Ese día el técnico ya tiene 2 visitas.');
+  await field.fill('');
+  assert.equal(await hint.textContent(), '');
+  await page.keyboard.press('Escape');
+  // sin responsable no hay aviso
+  await cardOf(page, 'Visita N1').getByRole('button', {name: 'Reprogramar'}).click();
+  await field.fill(d.later);
+  assert.equal(await hint.textContent(), '');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('cancelar una visita registra el motivo, la quita de las vistas y no reaparece al recargar', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await page.evaluate(async () => { const db = await import('/js/store.js'), r = (await db.all('workOrders')).find(x => x.name === 'Visita A1'); await db.saveEntity('workOrders', {...r, notes: 'Llamar antes de ir.'}); });
+  await page.reload({waitUntil: 'networkidle'});
+  await openList(page);
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Cancelar visita'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Cancelar visita'});
+  await dlg.waitFor();
+  assert.equal(await dlg.getByLabel('Motivo (opcional)').getAttribute('maxlength'), '200');
+  assert.equal(await dlg.getByLabel('Motivo (opcional)').evaluate(el => document.activeElement === el), true);
+  await dlg.getByText('La visita no se volverá a generar. Quedará registrada como cancelada.').waitFor();
+  await dlg.getByRole('button', {name: 'Volver'}).click();
+  assert.equal(await page.locator('.modal').count(), 0);
+  assert.equal((await woRow(page, 'Visita A1')).status, 'Planificada');
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Cancelar visita'}).click();
+  await dlg.waitFor();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.modal').count(), 0);
+  assert.equal((await woRow(page, 'Visita A1')).status, 'Planificada');
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Cancelar visita'}).click();
+  await dlg.getByLabel('Motivo (opcional)').fill('Equipo fuera de servicio');
+  await dlg.getByRole('button', {name: 'Cancelar visita', exact: true}).dblclick();
+  await page.locator('.modal').waitFor({state: 'detached'});
+  const row = await woRow(page, 'Visita A1');
+  assert.equal(row.status, 'Cancelada'); assert.equal(row.closedReason, 'visita cancelada'); assert.equal(row.manualEdit, '1');
+  assert.equal(row.notes, `Llamar antes de ir.\nVisita cancelada el ${d.today}: Equipo fuera de servicio`, 'una sola línea aunque se haga doble clic');
+  await page.getByText('Visita cancelada.', {exact: true}).waitFor();
+  assert.equal(await cardOf(page, 'Visita A1').count(), 0);
+  // sin motivo y con Enter: nota sin motivo y sin recargar la página
+  const url = page.url();
+  await cardOf(page, 'Visita N1').getByRole('button', {name: 'Cancelar visita'}).click();
+  await dlg.getByLabel('Motivo (opcional)').press('Enter');
+  await page.locator('.modal').waitFor({state: 'detached'});
+  assert.equal(page.url(), url);
+  assert.equal((await woRow(page, 'Visita N1')).notes, `Visita cancelada el ${d.today}.`);
+  // vistas Calendario y Carga no la muestran
+  await page.getByRole('button', {name: 'Carga', exact: true}).click();
+  await page.locator('.load-table').waitFor();
+  assert.equal(await cellAt(page, 'Ana Pérez', 0).textContent(), '0');
+  // no reaparece al recargar ni al volver a abrir el Planner
+  await page.reload({waitUntil: 'networkidle'});
+  await page.locator('nav').getByText('Vista general', {exact: true}).click();
+  await page.locator('nav').getByText('Planner', {exact: true}).click();
+  await page.locator('.load-table').waitFor();
+  await page.getByRole('button', {name: 'Lista', exact: true}).click();
+  await page.locator('[data-planner-visit]').first().waitFor();
+  assert.equal(await cardOf(page, 'Visita A1').count(), 0);
+  assert.equal(await cardOf(page, 'Visita N1').count(), 0);
+  const left = await rowsNamed(page, 'Visita A1');
+  assert.equal(left.length, 1); assert.equal(left[0].status, 'Cancelada');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('el motivo de la cancelación admite como máximo 200 caracteres', async () => {
+  const {context, page} = await newPage();
+  await loadFixture(page);
+  await openList(page);
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Cancelar visita'}).click();
+  const dlg = page.getByRole('dialog', {name: 'Cancelar visita'});
+  // el límite del navegador no se puede saltar a mano, pero la validación también corre al guardar
+  await dlg.getByLabel('Motivo (opcional)').evaluate(el => { el.removeAttribute('maxlength'); el.value = 'x'.repeat(201); });
+  await dlg.getByRole('button', {name: 'Cancelar visita', exact: true}).click();
+  await dlg.getByText('El motivo admite hasta 200 caracteres.').waitFor();
+  assert.equal((await woRow(page, 'Visita A1')).status, 'Planificada');
+  await dlg.getByLabel('Motivo (opcional)').fill('x'.repeat(200));
+  await dlg.getByRole('button', {name: 'Cancelar visita', exact: true}).click();
+  await page.locator('.modal').waitFor({state: 'detached'});
+  assert.equal((await woRow(page, 'Visita A1')).notes.length, `Visita cancelada el ${await page.evaluate(async () => (await import('/js/domain.js')).localDate())}: `.length + 200);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('en un plan con visitas generadas, reprogramar y cancelar no crean duplicados ni se deshacen al reabrir el Planner', async () => {
+  const {context, page} = await newPage();
+  await page.goto(server.url, {waitUntil: 'networkidle'});
+  await createCompany(page);
+  await plannerFixture(page);
+  const before = await visitRows(page), today = before[0].dueDate;
+  assert.equal(before.length, 4);
+  assert.deepEqual(before.map(v => v.dueDate), [today, shift(today, 30), shift(today, 60), shift(today, 90)]);
+  await page.locator('[data-planner-visit]').nth(0).getByRole('button', {name: 'Reprogramar'}).click();
+  let dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.getByLabel('Nueva fecha').fill(shift(today, 4));
+  await dlg.getByLabel('Nueva fecha').press('Enter');
+  await page.locator('.modal').waitFor({state: 'detached'});
+  await page.locator('[data-planner-visit]').nth(1).getByRole('button', {name: 'Cancelar visita'}).click();
+  dlg = page.getByRole('dialog', {name: 'Cancelar visita'});
+  await dlg.getByLabel('Motivo (opcional)').fill('Sin repuesto');
+  await dlg.getByLabel('Motivo (opcional)').press('Enter');
+  await page.locator('.modal').waitFor({state: 'detached'});
+  for (let i = 0; i < 2; i++) {
+    await gotoPlanner(page);
+    await page.locator('[data-planner-visit]').first().waitFor();
+    await page.waitForTimeout(500);
+    const rows = await visitRows(page);
+    assert.equal(rows.length, 4, 'no se crean visitas nuevas');
+    assert.deepEqual(rows.map(v => [v.id, v.dueDate, v.status]), [[before[0].id, shift(today, 4), 'Planificada'], [before[1].id, shift(today, 30), 'Cancelada'], [before[2].id, shift(today, 60), 'Planificada'], [before[3].id, shift(today, 90), 'Planificada']]);
+    assert.equal(rows[1].closedReason, 'visita cancelada');
+  }
+  // Correr calendario/cerrar el plan no tocan las visitas protegidas: pausar y reanudar el plan reconcilia con ellas
+  await page.getByRole('button', {name: 'Pausar plan'}).click();
+  await page.getByText('Plan pausado.').waitFor();
+  await page.getByRole('button', {name: 'Reanudar plan'}).click();
+  await page.getByText('Plan reanudado.').waitFor();
+  const rows = await visitRows(page);
+  assert.deepEqual(rows.map(v => [v.id, v.dueDate, v.status]), [[before[0].id, shift(today, 4), 'Planificada'], [before[1].id, shift(today, 30), 'Cancelada'], [before[2].id, shift(today, 60), 'Planificada'], [before[3].id, shift(today, 90), 'Planificada']]);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('un técnico no ve Reprogramar ni Cancelar visita y el manejador también rechaza la acción', async () => {
+  const {context, page} = await newPage();
+  await page.route('**/api/people*', route => route.fulfill({status: 403, contentType: 'application/json', body: '{"error":"no"}'}));
+  await loadFixture(page);
+  await openList(page);
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).waitFor();
+  await asUser(page, {id: 'u-ana', role: 'technician', email: 'ana@e.test', companyIds: ['*']});
+  for (const view of ['Calendario', 'Carga', 'Lista']) {
+    await page.getByRole('button', {name: view, exact: true}).click();
+    if (view === 'Carga') { await cellAt(page, 'Ana Pérez', 0).click(); await page.locator('[data-planner-visit]').first().waitFor(); }
+    if (view === 'Lista') await page.locator('[data-planner-visit]').first().waitFor();
+    assert.equal(await page.getByRole('button', {name: 'Reprogramar'}).count(), 0, view);
+    assert.equal(await page.getByRole('button', {name: 'Cancelar visita'}).count(), 0, view);
+  }
+  const id = (await woRow(page, 'Visita A1')).id;
+  for (const [action, text] of [['planner-reschedule', 'Tu rol no permite reprogramar visitas.'], ['planner-cancel', 'Tu rol no permite cancelar visitas.']]) {
+    await page.evaluate(([a, i]) => { const b = document.createElement('button'); b.dataset.action = a; b.dataset.id = i; b.id = 'forced'; document.body.append(b); b.click(); b.remove(); }, [action, id]);
+    await page.getByText(text).waitFor();
+    assert.equal(await page.locator('.modal').count(), 0);
+  }
+  const row = await woRow(page, 'Visita A1');
+  assert.equal(row.status, 'Planificada'); assert.equal(row.manualEdit || '', '');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('si la visita cambia en otro dispositivo antes de guardar, reprogramar y cancelar avisan y no escriben', async () => {
+  const {context, page} = await newPage();
+  const d = await loadFixture(page);
+  await openList(page);
+  const touch = (name, patch) => page.evaluate(async ([n, p]) => { const db = await import('/js/store.js'), r = (await db.all('workOrders')).find(x => x.name === n); await db.saveEntity('workOrders', {...r, ...p}); }, [name, patch]);
+  const stale = 'Esta visita cambió en otro dispositivo. Actualiza la pantalla e inténtalo de nuevo.';
+  // reprogramar: otro dispositivo cambia la visita (prioridad) después de abrir el diálogo
+  await cardOf(page, 'Visita A1').getByRole('button', {name: 'Reprogramar'}).click();
+  let dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.getByLabel('Nueva fecha').fill(shift(d.today, 5));
+  await touch('Visita A1', {priority: 'Alta'});
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await page.getByText(stale).waitFor();
+  assert.equal(await page.locator('.modal').count(), 0);
+  let row = await woRow(page, 'Visita A1');
+  assert.equal(row.dueDate, d.today); assert.equal(row.priority, 'Alta'); assert.equal(row.manualEdit || '', '');
+  // cancelar: otro dispositivo ya la completó
+  await cardOf(page, 'Visita A3').getByRole('button', {name: 'Cancelar visita'}).click();
+  dlg = page.getByRole('dialog', {name: 'Cancelar visita'});
+  await touch('Visita A3', {status: 'Completada'});
+  await dlg.getByRole('button', {name: 'Cancelar visita', exact: true}).click();
+  await page.getByText(stale).waitFor();
+  row = await woRow(page, 'Visita A3');
+  assert.equal(row.status, 'Completada'); assert.equal(row.closedReason || '', ''); assert.equal(row.notes || '', '');
+  // reprogramar una visita que otro dispositivo borró
+  const n1Id = (await woRow(page, 'Visita N1')).id;
+  await cardOf(page, 'Visita N1').getByRole('button', {name: 'Reprogramar'}).click();
+  dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.getByLabel('Nueva fecha').fill(shift(d.today, 6));
+  await page.evaluate(async () => { const db = await import('/js/store.js'), r = (await db.all('workOrders')).find(x => x.name === 'Visita N1'); await db.saveEntity('workOrders', r, {deleted: true}); });
+  await dlg.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  await page.getByText(stale).first().waitFor();
+  const gone = await page.evaluate(async id => (await import('/js/store.js')).get('workOrders', id), n1Id);
+  assert.equal(gone._sync.deleted, true); assert.equal(gone.dueDate, d.today); assert.equal(gone.manualEdit || '', '');
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('Reprogramar y Cancelar visita no desbordan a 375 px y sus botones son táctiles', async () => {
+  const {context, page} = await newPage({hasTouch: true});
+  await page.setViewportSize({width: 375, height: 800});
+  const d = await loadFixture(page, {menu: true});
+  await page.click('[data-action=menu]');
+  await openList(page);
+  const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  assert.equal(await fits(), true);
+  const card = cardOf(page, 'Visita A1');
+  for (const name of ['Iniciar visita', 'Reasignar', 'Reprogramar', 'Cancelar visita', 'Abrir / editar']) {
+    const box = await card.getByRole('button', {name, exact: true}).boundingBox();
+    assert.ok(box.height >= 40, name + ' ' + JSON.stringify(box));
+    assert.ok(box.x >= 0 && box.x + box.width <= 375, name + ' dentro de la pantalla ' + JSON.stringify(box));
+  }
+  await card.getByRole('button', {name: 'Reprogramar', exact: true}).click();
+  const dlg = page.getByRole('dialog', {name: 'Reprogramar visita'});
+  await dlg.waitFor();
+  assert.equal(await fits(), true);
+  for (const b of await dlg.getByRole('button').all()) { const box = await b.boundingBox(); assert.ok(box.height >= 40 && box.x >= 0 && box.x + box.width <= 375, JSON.stringify(box)); }
+  const fbox = await dlg.getByLabel('Nueva fecha').boundingBox();
+  assert.ok(fbox.height >= 40 && fbox.x + fbox.width <= 375, JSON.stringify(fbox));
+  await page.keyboard.press('Escape');
+  await card.getByRole('button', {name: 'Cancelar visita', exact: true}).click();
+  const cdlg = page.getByRole('dialog', {name: 'Cancelar visita'});
+  await cdlg.waitFor();
+  assert.equal(await fits(), true);
+  for (const b of await cdlg.getByRole('button').all()) { const box = await b.boundingBox(); assert.ok(box.height >= 40 && box.x >= 0 && box.x + box.width <= 375, JSON.stringify(box)); }
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
