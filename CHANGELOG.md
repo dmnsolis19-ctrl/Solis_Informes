@@ -1,3 +1,14 @@
+# 3.11.0 · Reprogramar y cancelar visitas · 12 de noviembre de 2026
+
+- Botones «Reprogramar» y «Cancelar visita» en la tarjeta de toda visita Planificada (vistas Lista, Calendario y Carga). Solo administrador, supervisor o modo local; los técnicos no los ven y el manejador de la acción también lo comprueba.
+- «Reprogramar»: diálogo con «Nueva fecha» (foco inicial en el campo), aviso al instante cuando ese día el mismo responsable ya tiene visitas abiertas («Ese día el técnico ya tiene 2 visitas.») y validación en español: «Elige una fecha válida.», «Sin cambios: elige una fecha distinta.» y «Elige una fecha entre <desde> y <hasta>.» (hoy − 365 días a hoy + 730 días, con aritmética UTC entera). El id de la visita no cambia, así que el generador no recrea una visita en la fecha original. En Calendario la visita pasa al nuevo día y se conserva el día seleccionado; en Carga cambia de semana.
+- «Cancelar visita»: diálogo con motivo opcional (hasta 200 caracteres) y confirmación con nombre explícito. La visita queda `Cancelada` con `closedReason='visita cancelada'` y una línea «Visita cancelada el AAAA-MM-DD: motivo» añadida a las notas (sin pisar las anteriores y respetando el límite de 20000). No se vuelve a generar y deja de verse en el Planner; se puede restaurar desde «Órdenes y mantenimiento» → «Abrir / editar» → Estado.
+- Protecciones: ambas acciones dejan `manualEdit='1'` (protegida de «Correr calendario» y de los cambios del plan), guardan el objeto del estado con su control de conflictos (si cambió en otro dispositivo, fue borrada o ya no está Planificada, avisa sin escribir), bloquean el doble clic y se guardan con Enter sin recargar la página.
+- Las visitas canceladas no cuentan como medibles en «Indicadores», y reprogramar una visita cambia su fecha de referencia para esa medición (documentado en `docs/USO_V3.md`).
+- Botones de la tarjeta con objetivo táctil de al menos 40 px en móvil, sin desbordamiento horizontal a 375 px y tema oscuro.
+- Sin migración D1 ni campos de datos nuevos (se usan `dueDate`, `status`, `closedReason`, `manualEdit` y `notes`); sin cambios en IndexedDB ni en la sincronización.
+- 281 pruebas automáticas superadas y 34 pruebas de navegador superadas.
+
 # 3.10.0 · Indicadores de cumplimiento del Planner · 11 de noviembre de 2026
 
 - Cuarta vista del Planner, «Indicadores» (selector «Lista | Calendario | Carga | Indicadores», se recuerda en cada dispositivo): tarjetas de Cumplimiento, Puntualidad, Atraso promedio y Vencidas abiertas (con la más antigua), «Visitas medidas: N», tabla de cumplimiento por técnico (los peores primero) y evolución mensual con barras y el número siempre visible. Período «Últimos 30 días | 90 días | 180 días» (por defecto 90, no se guarda) y los mismos filtros que las otras vistas.
