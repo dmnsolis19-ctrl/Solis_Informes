@@ -565,13 +565,13 @@ test('reasignar una visita en modo local cambia de fila, marca la edición manua
   assert.deepEqual(await page.locator('.load-table tbody th').allTextContents(), ['Ana Pérez', 'Beto Soto', 'Sin técnico']);
   assert.equal(await page.locator('[data-planner-visit]').count(), 0, 'la celda elegida quedó sin esa visita y se ve la guía o la lista vacía');
   // Enter en el campo de texto guarda sin recargar la página
-  const url = page.url();
   await cellAt(page, 'Sin técnico', 0).click();
   await page.locator('[data-planner-visit]', {hasText: 'Visita N1'}).getByRole('button', {name: 'Reasignar'}).click();
   await page.fill('input[name=owner]', 'Carla Díaz');
+  await page.evaluate(() => { window.__noReload = 1; });
   await page.press('input[name=owner]', 'Enter');
   await page.locator('.modal').waitFor({state: 'detached'});
-  assert.equal(page.url(), url);
+  assert.equal(await page.evaluate(() => window.__noReload), 1, 'Enter no recarga la página');
   const carla = await woRow(page, 'Visita N1');
   assert.equal(carla.owner, 'Carla Díaz'); assert.equal(carla.manualEdit, '1');
   // el campo admite como máximo 200 caracteres
@@ -893,10 +893,10 @@ test('reprogramar desde la lista valida la fecha, guarda con Enter sin recargar 
   await field.fill(shift(d.today, 730));
   await page.waitForFunction(() => document.querySelector('[data-error-for=date]').textContent === '');
   await field.fill(shift(d.today, 3));
-  const url = page.url();
+  await page.evaluate(() => { window.__noReload = 1; });
   await field.press('Enter');
   await page.locator('.modal').waitFor({state: 'detached'});
-  assert.equal(page.url(), url, 'Enter no recarga la página');
+  assert.equal(await page.evaluate(() => window.__noReload), 1, 'Enter no recarga la página');
   const row = await woRow(page, 'Visita A1');
   assert.equal(row.dueDate, shift(d.today, 3)); assert.equal(row.manualEdit, '1'); assert.equal(row.id, before.id); assert.equal(row.status, 'Planificada');
   await page.getByText(`Visita reprogramada al ${await fmt(page, shift(d.today, 3))}.`).waitFor();
@@ -1019,11 +1019,11 @@ test('cancelar una visita registra el motivo, la quita de las vistas y no reapar
   await page.getByText('Visita cancelada.', {exact: true}).waitFor();
   assert.equal(await cardOf(page, 'Visita A1').count(), 0);
   // sin motivo y con Enter: nota sin motivo y sin recargar la página
-  const url = page.url();
   await cardOf(page, 'Visita N1').getByRole('button', {name: 'Cancelar visita'}).click();
+  await page.evaluate(() => { window.__noReload = 1; });
   await dlg.getByLabel('Motivo (opcional)').press('Enter');
   await page.locator('.modal').waitFor({state: 'detached'});
-  assert.equal(page.url(), url);
+  assert.equal(await page.evaluate(() => window.__noReload), 1, 'Enter no recarga la página');
   assert.equal((await woRow(page, 'Visita N1')).notes, `Visita cancelada el ${d.today}.`);
   // vistas Calendario y Carga no la muestran
   await page.getByRole('button', {name: 'Carga', exact: true}).click();

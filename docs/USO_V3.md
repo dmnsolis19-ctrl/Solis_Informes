@@ -172,7 +172,7 @@ Administradores, supervisores y el modo local ven «Reprogramar» en las visitas
 
 Mismos permisos que «Reprogramar». El diálogo pide un motivo opcional (hasta 200 caracteres) y avisa que la visita no se volverá a generar. La visita queda «Cancelada» con edición manual y una línea en sus notas («Visita cancelada el AAAA-MM-DD: motivo») añadida después de las notas anteriores. Deja de verse en las vistas del Planner y **no cuenta como medible en «Indicadores»**; tampoco se regenera al correr el calendario ni al editar el plan.
 
-Para restaurar una visita cancelada: «Órdenes y mantenimiento» → «Abrir / editar» → Estado = Planificada. Si fue cancelada a propósito, conviene dejar su fecha en el futuro.
+Para restaurar una visita cancelada: «Órdenes y mantenimiento» → «Abrir / editar» → Estado = Planificada. Al restaurarla, revisa su «Fecha programada»: si quedó en el pasado aparecerá como vencida y contará en «Indicadores». La línea «Visita cancelada el…» queda en las notas como registro.
 
 ### Indicadores
 
