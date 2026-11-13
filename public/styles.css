@@ -123,3 +123,8 @@
 .kpi-actions{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:0 0 8px}
 @media(max-width:900px){.kpi-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.kpi-period .seg button{padding:8px 6px}.planner-toolbar .seg button{padding:8px 4px;min-width:0;font-size:12px}.kpi-value{font-size:24px}.kpi-table .kpi-name{min-width:104px;max-width:128px;padding:10px 8px}.kpi-month{grid-template-columns:72px minmax(0,1fr);gap:4px 10px}.kpi-month-name{white-space:nowrap}.kpi-month-text{grid-column:2;font-size:12px}.kpi-actions .btn{width:100%}}
+.field-error{display:block;color:var(--cal-overdue-fg);font-size:12px;line-height:1.5;margin:4px 0 8px}.field-error:empty{display:none}
+.btn.destructive{background:var(--red);color:#fff}.btn.destructive:hover{filter:brightness(.92)}
+@media(max-width:600px){[data-planner-visit] .catalog-card-actions>.btn.small{min-height:40px}}
+[data-theme=dark] .btn.destructive{background:#a43c3c;color:#fff}
+@media(max-width:900px){.catalog-card[data-planner-visit] .catalog-card-actions{padding-left:0}.catalog-card[data-planner-visit] .catalog-card-copy{flex-basis:100%}}

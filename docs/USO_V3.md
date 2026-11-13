@@ -159,6 +159,21 @@ El selector **Lista | Calendario | Carga** muestra en «Carga» una tabla con un
 
 Administradores, supervisores y el modo local ven «Reasignar» en las visitas Planificadas (lista, calendario y carga). El diálogo ofrece las personas de la empresa (correo y rol), «Sin técnico» y, sin sesión, un campo «Responsable». La visita queda con edición manual: «Correr calendario» y los cambios del plan ya no la tocan. Si la visita cambió en otro dispositivo o ya no está Planificada, se avisa sin guardar. Los técnicos no ven el botón: el servidor no les permite asignar visitas a otros.
 
+### Reprogramar una visita
+
+Administradores, supervisores y el modo local ven «Reprogramar» en las visitas Planificadas (lista, calendario y carga); los técnicos no. El diálogo muestra el nombre, el equipo y la fecha actual, y pide la «Nueva fecha». Si ese día el mismo responsable ya tiene visitas abiertas, aparece un aviso («Ese día el técnico ya tiene 2 visitas.») que se actualiza al cambiar la fecha; es solo informativo. La fecha debe ser válida, distinta de la actual y estar entre hoy menos 365 días y hoy más 730 días.
+
+- La visita conserva su identificador, así que el Planner no vuelve a crear una visita en la fecha original, y queda con edición manual: «Correr calendario» y los cambios del plan ya no la tocan.
+- En el calendario la visita pasa al nuevo día (el día elegido se conserva); en «Carga» cambia de semana si corresponde.
+- Si la visita cambió en otro dispositivo o ya no está Planificada, se avisa sin guardar.
+- Reprogramar cambia la fecha de referencia de la visita en «Indicadores»: una visita movida a una fecha futura deja de contar como vencida y, si la fecha nueva queda dentro del período, se mide contra la fecha nueva.
+
+### Cancelar una visita
+
+Mismos permisos que «Reprogramar». El diálogo pide un motivo opcional (hasta 200 caracteres) y avisa que la visita no se volverá a generar. La visita queda «Cancelada» con edición manual y una línea en sus notas («Visita cancelada el AAAA-MM-DD: motivo») añadida después de las notas anteriores. Deja de verse en las vistas del Planner y **no cuenta como medible en «Indicadores»**; tampoco se regenera al correr el calendario ni al editar el plan.
+
+Para restaurar una visita cancelada: «Órdenes y mantenimiento» → «Abrir / editar» → Estado = Planificada. Al restaurarla, revisa su «Fecha programada»: si quedó en el pasado aparecerá como vencida y contará en «Indicadores». La línea «Visita cancelada el…» queda en las notas como registro.
+
 ### Indicadores
 
 Cuarta vista del Planner (**Lista | Calendario | Carga | Indicadores**, visible para todos los roles que ven el Planner, solo lectura). Elige el período «Últimos 30 días», «90 días» (por defecto) o «180 días»: la ventana va desde hoy menos (N − 1) días hasta hoy, por **fecha programada**. Respeta los filtros de técnico, cliente y equipo.
@@ -176,7 +191,7 @@ Los porcentajes se redondean a enteros (100 % solo cuando es exacto, y 0 % solo 
 
 ### Limitaciones de la fase 1
 
-- No hay vista semanal ni arrastrar para reprogramar visitas en el calendario; la carga por técnico no tiene capacidades configurables ni reasignación en bloque.
+- No hay vista semanal ni arrastrar para reprogramar visitas en el calendario; reprogramar y reasignar se hacen de una en una (no hay acciones en bloque, deshacer con un toque ni restaurar canceladas desde el Planner); la carga por técnico no tiene capacidades configurables.
 - No hay mantenimiento por horas de operación.
 - No hay indicadores de MTBF ni MTTR, repuestos ni costos (los de cumplimiento están en «Indicadores»).
 - El portal del cliente no cambia.

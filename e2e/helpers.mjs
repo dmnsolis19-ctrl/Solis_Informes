@@ -36,5 +36,17 @@ export async function createCompany(page, name = 'Empresa E2E SpA') {
   await page.getByText('Empresas y marca').first().click();
   await page.fill('[data-field="name"]', name);
   await page.getByText('Guardar empresa').click();
-  await page.waitForTimeout(400);
+  // La empresa ya está guardada (y la pantalla recargada) cuando aparece el aviso; no se espera un tiempo fijo.
+  await page.locator('#toast.visible', {hasText: 'Empresa guardada'}).waitFor();
+}
+
+/** Reintenta `check` (con aserciones) hasta que deje de fallar o venza el plazo; sirve para estados que se escriben de forma asíncrona. */
+export async function eventually(check, {timeout = 15000, interval = 50} = {}) {
+  const end = Date.now() + timeout;
+  for (;;) {
+    try { return await check(); } catch (error) {
+      if (Date.now() >= end) throw error;
+      await new Promise(r => setTimeout(r, interval));
+    }
+  }
 }
