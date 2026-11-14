@@ -128,3 +128,9 @@
 @media(max-width:600px){[data-planner-visit] .catalog-card-actions>.btn.small{min-height:40px}}
 [data-theme=dark] .btn.destructive{background:#a43c3c;color:#fff}
 @media(max-width:900px){.catalog-card[data-planner-visit] .catalog-card-actions{padding-left:0}.catalog-card[data-planner-visit] .catalog-card-copy{flex-basis:100%}}
+/* 3.12: inicio ordenado — cifras arriba, filtros plegables, tablas sin cortar palabras */
+.stat-kpi{display:flex;flex-direction:column}.stat-kpi>b{order:-1;font-size:30px;line-height:1.1;margin-bottom:6px}.stat-kpi>.eyebrow{display:block}
+.ops-fold{padding:0}.ops-fold>summary{cursor:pointer;list-style:none;padding:14px 18px;min-height:44px;display:flex;align-items:center;font-weight:600;font-size:14px}.ops-fold>summary::-webkit-details-marker{display:none}.ops-fold>summary::before{content:"▸";margin-right:8px;transition:none}.ops-fold[open]>summary::before{content:"▾"}.ops-fold>.form-grid{padding:0 18px 18px}
+.ops-table th{overflow-wrap:normal;word-break:normal;white-space:nowrap}
+.operations-welcome{padding:5px 0 10px}.operations-welcome p{margin:0}
+.dashboard-grid .ops-table th,.dashboard-grid .ops-table td{padding:10px 6px}.dashboard-grid .ops-table th{letter-spacing:.3px;font-size:9.5px}

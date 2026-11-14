@@ -1,3 +1,10 @@
+# 3.12.0 · Inicio más claro y ordenado · 14 de noviembre de 2026
+
+- Vista general: las cifras (borradores, en revisión, emitidos, acciones vencidas) pasan arriba, con el número grande sobre su etiqueta; los filtros quedan plegados bajo «Filtrar» (con el número de filtros activos, y abiertos si hay alguno); se elimina el titular repetido.
+- Planner: sin planes no se muestran los filtros ni un segundo botón «Crear plan».
+- Tablas del inicio: los encabezados ya no se parten a mitad de palabra.
+- Solo interfaz: sin migración D1, sin cambios en IndexedDB ni en la sincronización.
+
 # 3.11.0 · Reprogramar y cancelar visitas · 12 de noviembre de 2026
 
 - Botones «Reprogramar» y «Cancelar visita» en la tarjeta de toda visita Planificada (vistas Lista, Calendario y Carga). Solo administrador, supervisor o modo local; los técnicos no los ven y el manejador de la acción también lo comprueba.
