@@ -746,6 +746,7 @@ test('la vista Carga no desborda la página a 375 px y la tabla se desplaza dent
   const box = await cellAt(page, 'Ana Pérez', 0).boundingBox();
   assert.ok(box.width >= 44 && box.height >= 44, JSON.stringify(box));
   await cellAt(page, 'Ana Pérez', 0).click();
+  await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).getByRole('button', {name: 'Más acciones'}).click();
   await page.locator('[data-planner-visit]', {hasText: 'Visita A1'}).getByRole('button', {name: 'Reasignar'}).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual(page.errors, []);
@@ -1237,7 +1238,8 @@ test('Reprogramar y Cancelar visita no desbordan a 375 px y sus botones son tác
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   assert.equal(await fits(), true);
   const card = cardOf(page, 'Visita A1');
-  for (const name of ['Iniciar visita', 'Reasignar', 'Reprogramar', 'Cancelar visita', 'Abrir / editar']) {
+  await card.getByRole('button', {name: 'Más acciones'}).click();
+  for (const name of ['Iniciar visita', 'Más acciones', 'Reasignar', 'Reprogramar', 'Cancelar visita', 'Abrir / editar']) {
     const box = await card.getByRole('button', {name, exact: true}).boundingBox();
     assert.ok(box.height >= 40, name + ' ' + JSON.stringify(box));
     assert.ok(box.x >= 0 && box.x + box.width <= 375, name + ' dentro de la pantalla ' + JSON.stringify(box));
@@ -1255,6 +1257,38 @@ test('Reprogramar y Cancelar visita no desbordan a 375 px y sus botones son tác
   await cdlg.waitFor();
   assert.equal(await fits(), true);
   for (const b of await cdlg.getByRole('button').all()) { const box = await b.boundingBox(); assert.ok(box.height >= 40 && box.x >= 0 && box.x + box.width <= 375, JSON.stringify(box)); }
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});
+
+test('en el celular hay navegación inferior y las visitas esconden sus acciones secundarias bajo «Más acciones»', async () => {
+  const {context, page} = await newPage();
+  await openApp(page);
+  await createCompany(page);
+  await page.setViewportSize({width: 375, height: 812});
+  await page.evaluate(async () => {
+    const db = await import('/js/store.js'), {newCatalog} = await import('/js/catalogs.js'), {localDate} = await import('/js/domain.js');
+    const companyId = (await db.all('companies'))[0].id;
+    const asset = Object.assign(newCatalog('equipment', companyId), {name: 'Equipo Móvil', tag: 'EQ-M'}); await db.saveEntity('equipment', asset);
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name: 'Visita móvil', type: 'Orden de trabajo', planId: 'plan-movil', equipmentId: asset.id, dueDate: localDate(), status: 'Planificada'}));
+    await db.saveEntity('workOrders', Object.assign(newCatalog('workOrders', companyId), {name: 'Plan móvil', type: 'Plan de mantenimiento', equipmentId: asset.id, anchorDate: localDate(), dueDate: localDate(), intervalDays: '30', status: 'Planificada', planState: 'Activo'}));
+  });
+  await page.reload({waitUntil: 'networkidle'});
+  const bottom = page.getByRole('navigation', {name: 'Navegación principal'});
+  await bottom.getByRole('button', {name: 'Planner'}).click();
+  await page.waitForSelector('.planner-section');
+  assert.equal(await bottom.getByRole('button', {name: 'Planner'}).getAttribute('aria-current'), 'page');
+  const card = page.locator('[data-planner-visit]', {hasText: 'Visita móvil'}).first();
+  await card.waitFor();
+  const reschedule = card.getByRole('button', {name: 'Reprogramar'});
+  assert.equal(await reschedule.isVisible(), false, 'las acciones secundarias empiezan ocultas en móvil');
+  const more = card.getByRole('button', {name: 'Más acciones'});
+  await more.click();
+  await reschedule.waitFor();
+  assert.equal(await more.getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await bottom.getByRole('button', {name: 'Más opciones'}).click();
+  await page.locator('#sidebar.open').waitFor();
   assert.deepEqual(page.errors, []);
   await context.close();
 });
