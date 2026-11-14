@@ -1,3 +1,11 @@
+# 3.13.0 · Navegación y tarjetas de visita en el celular · 14 de noviembre de 2026
+
+- Barra de navegación inferior en pantallas de hasta 980 px: Inicio, Planner, Informes, Equipos y «Más» (abre el menú lateral); la opción activa se marca y se anuncia con `aria-current`. No aparece en el editor de informes.
+- Iconos distintos para Planner, Órdenes y mantenimiento, Biblioteca técnica, Empresas y marca, Reglas de alertas y Equipo y servicios (antes se repetían).
+- Tarjetas de visita del Planner en el celular: se ve la acción principal y el botón «Más acciones» (con `aria-expanded`) que muestra Reasignar, Reprogramar, Cancelar visita y Abrir / editar. En pantallas grandes no cambia nada.
+- Solo interfaz: sin migración D1, sin cambios en IndexedDB ni en la sincronización.
+- 281 pruebas automáticas superadas y 35 pruebas de navegador superadas.
+
 # 3.12.0 · Inicio más claro y ordenado · 14 de noviembre de 2026
 
 - Vista general: las cifras (borradores, en revisión, emitidos, acciones vencidas) pasan arriba, con el número grande sobre su etiqueta; los filtros quedan plegados bajo «Filtrar» (con el número de filtros activos, y abiertos si hay alguno); se elimina el titular repetido.
