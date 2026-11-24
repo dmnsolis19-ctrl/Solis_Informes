@@ -147,3 +147,8 @@
 [data-planner-visit]:not(.more-open) .catalog-card-actions .btn.secondary:not(.card-more){display:none}
 .catalog-card .card-more[aria-expanded=true]{background:#e6f4ef}
 }
+/* 3.14: panel de inicio según el rol */
+.home-panel{margin-bottom:22px}.home-tiles{grid-template-columns:repeat(3,minmax(0,1fr));margin:14px 0}.home-tiles .stat-card{padding:14px}
+.home-alert{border-color:#e2b24e}.home-alert>b{color:#a8620a}
+.home-visit{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.home-visit small{display:block;color:#6c8792;margin-top:2px}.home-visit .btn{flex:none;min-height:44px}
+@media(max-width:600px){.home-tiles{gap:8px}.home-tiles .stat-card{padding:12px}.home-visit{flex-wrap:wrap}.home-visit .btn{width:100%}}

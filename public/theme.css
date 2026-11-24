@@ -45,3 +45,4 @@
 [data-theme=dark] .cal-day.today .cal-num{background:var(--teal);color:#0d2230}
 :root[data-theme=dark]{--load-1-bg:#1c3a36;--load-1-fg:#bfeede;--load-2-bg:#1f6a5c;--load-2-fg:#fff;--load-3-bg:#35b79b;--load-3-fg:#06231e}
 [data-theme=dark] .load-cell[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--mint)}
+[data-theme=dark] .home-alert>b{color:#f0b35a}[data-theme=dark] .home-alert{border-color:#7a5a1f}[data-theme=dark] .home-visit{border-top-color:#2c4452}[data-theme=dark] .home-visit small{color:#9fb4be}
