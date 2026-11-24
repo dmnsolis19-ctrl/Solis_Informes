@@ -1292,3 +1292,25 @@ test('en el celular hay navegación inferior y las visitas esconden sus acciones
   assert.deepEqual(page.errors, []);
   await context.close();
 });
+
+test('la Vista general muestra al responsable qué requiere atención y al técnico sus visitas de hoy', async () => {
+  const {context, page} = await newPage();
+  await mockServer(page);
+  await loadFixture(page);
+  const tile = label => page.locator('.home-tiles .stat-card', {hasText: label}).locator('b');
+  await page.locator('.home-panel h2', {hasText: 'Qué requiere atención'}).waitFor();
+  assert.equal(await tile('Vencidas').innerText(), '1');
+  assert.equal(await tile('Hoy').innerText(), '2');
+  assert.equal(await tile('Sin técnico').innerText(), '1');
+  await page.locator('.home-visit', {hasText: 'Visita A3'}).waitFor();
+  await asUser(page, {id: 'u-ana', role: 'technician', email: 'ana@e.test', companyIds: ['*']});
+  await page.locator('nav').getByText('Informes', {exact: true}).click();
+  await page.locator('nav').getByText('Vista general', {exact: true}).click();
+  await page.locator('.home-panel h2', {hasText: 'Mis visitas de hoy'}).waitFor();
+  const rows = page.locator('.home-visit');
+  await eventually(async () => assert.deepEqual(await rows.locator('b').allInnerTexts(), ['Visita A3', 'Visita A1']));
+  assert.equal(await page.locator('.home-visit [data-action=planner-start]').count(), 2);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(page.errors, []);
+  await context.close();
+});

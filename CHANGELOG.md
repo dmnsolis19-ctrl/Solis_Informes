@@ -1,3 +1,11 @@
+# 3.14.0 · Vista general según el rol · 24 de noviembre de 2026
+
+- Administrador, supervisor y modo local: panel «Qué requiere atención» con las visitas abiertas vencidas, las de hoy y las sin técnico en la semana (en ámbar cuando hay vencidas o sin técnico), las 3 más atrasadas y acceso al Planner.
+- Técnico: panel «Mis visitas de hoy» con sus visitas de hoy y atrasadas (hasta 5) y botón «Iniciar visita». Los clientes no ven el panel. Sin visitas ni planes no se muestra nada.
+- El rol guardado en el dispositivo se usa sin conexión (como en el resto del Planner).
+- Solo interfaz: sin migración D1, sin cambios en IndexedDB ni en la sincronización.
+- 281 pruebas automáticas superadas y 36 pruebas de navegador superadas.
+
 # 3.13.0 · Navegación y tarjetas de visita en el celular · 14 de noviembre de 2026
 
 - Barra de navegación inferior en pantallas de hasta 980 px: Inicio, Planner, Informes, Equipos y «Más» (abre el menú lateral); la opción activa se marca y se anuncia con `aria-current`. No aparece en el editor de informes.
